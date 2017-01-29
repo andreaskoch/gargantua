@@ -26,8 +26,19 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 		}()
 	}
 
-	for result := range results {
-		fmt.Println(result.Message)
+	resultCounter := 0
+	waitForResults := true
+	for waitForResults {
+		select {
+		case result := <-results:
+			resultCounter++
+			fmt.Println(result.Message)
+
+			if resultCounter >= len(urls) {
+				close(results)
+				waitForResults = false
+			}
+		}
 	}
 
 	return nil
