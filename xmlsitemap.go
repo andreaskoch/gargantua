@@ -7,17 +7,17 @@ import (
 
 func getXMLSitemap(xmlSitemapURL string) (XMLSitemap, error) {
 
-	body, readErr := readURL(xmlSitemapURL)
+	response, readErr := readURL(xmlSitemapURL)
 	if readErr != nil {
 		return XMLSitemap{}, readErr
 	}
 
-	if !strings.Contains(string(body), "</urlset>") {
+	if !strings.Contains(string(response.Body()), "</urlset>") {
 		return XMLSitemap{}, XmlSitemapError{"Invalid content"}
 	}
 
 	var urlSet XMLSitemap
-	unmarshalError := xml.Unmarshal(body, &urlSet)
+	unmarshalError := xml.Unmarshal(response.Body(), &urlSet)
 	if unmarshalError != nil {
 		return XMLSitemap{}, unmarshalError
 	}

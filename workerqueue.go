@@ -3,6 +3,7 @@ package main
 import "fmt"
 
 type WorkResult struct {
+	Error   error
 	Message string
 }
 

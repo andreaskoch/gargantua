@@ -6,17 +6,17 @@ import (
 )
 
 func getSitemapIndex(xmlSitemapURL string) (SitemapIndex, error) {
-	body, readErr := readURL(xmlSitemapURL)
+	response, readErr := readURL(xmlSitemapURL)
 	if readErr != nil {
 		return SitemapIndex{}, readErr
 	}
 
-	if !strings.Contains(string(body), "</sitemapindex>") {
+	if !strings.Contains(string(response.Body()), "</sitemapindex>") {
 		return SitemapIndex{}, SitemapIndexError{"Invalid content"}
 	}
 
 	var sitemapIndex SitemapIndex
-	unmarshalError := xml.Unmarshal(body, &sitemapIndex)
+	unmarshalError := xml.Unmarshal(response.Body(), &sitemapIndex)
 	if unmarshalError != nil {
 		return SitemapIndex{}, unmarshalError
 	}

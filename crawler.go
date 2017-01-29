@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 )
 
 func crawl(xmlSitemapURL string, options CrawlOptions) error {
@@ -29,7 +30,12 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 	resultCounter := 0
 	for result := range results {
 		resultCounter++
-		fmt.Println(result.Message)
+
+		if result.Error != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", result.Error)
+		} else {
+			fmt.Fprintf(os.Stdout, "%s\n", result.Message)
+		}
 
 		if resultCounter >= len(urls) {
 			close(results)
@@ -42,12 +48,16 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 func createWorkFunction(index int, url url.URL) func() WorkResult {
 	return func() WorkResult {
 
-		content, err := readURL(url.String())
+		response, err := readURL(url.String())
 		if err != nil {
-			return WorkResult{fmt.Sprintf("Error: %s", err)}
+			return WorkResult{
+				Error: err,
+			}
 		}
 
-		return WorkResult{fmt.Sprintf("%000d %s: %d", index+1, url.String(), len(content))}
+		return WorkResult{
+			Message: fmt.Sprintf("%05d  %03d %9s %15s  %s", index+1, response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), url.String()),
+		}
 	}
 }
 
