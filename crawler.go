@@ -13,7 +13,7 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 		return err
 	}
 
-	results := StartDispatcher(80, len(urls))
+	results := StartDispatcher(80)
 
 	for index, url := range urls {
 
@@ -27,17 +27,12 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 	}
 
 	resultCounter := 0
-	waitForResults := true
-	for waitForResults {
-		select {
-		case result := <-results:
-			resultCounter++
-			fmt.Println(result.Message)
+	for result := range results {
+		resultCounter++
+		fmt.Println(result.Message)
 
-			if resultCounter >= len(urls) {
-				close(results)
-				waitForResults = false
-			}
+		if resultCounter >= len(urls) {
+			close(results)
 		}
 	}
 

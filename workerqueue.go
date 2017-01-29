@@ -16,9 +16,9 @@ var WorkerQueue chan chan WorkRequest
 // A buffered channel that we can send work requests on.
 var WorkQueue = make(chan WorkRequest, 100)
 
-func StartDispatcher(nworkers int, numberOfWorkRequets int) chan WorkResult {
+func StartDispatcher(nworkers int) chan WorkResult {
 
-	results := make(chan WorkResult, numberOfWorkRequets)
+	results := make(chan WorkResult, 10)
 
 	// First, initialize the channel we are going to but the workers' work channels into.
 	WorkerQueue = make(chan chan WorkRequest, nworkers)
