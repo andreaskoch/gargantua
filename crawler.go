@@ -14,7 +14,7 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 		return err
 	}
 
-	results := StartDispatcher(80)
+	results := StartDispatcher(50)
 
 	for index, url := range urls {
 
