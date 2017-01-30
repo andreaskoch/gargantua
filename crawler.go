@@ -1,10 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 func crawl(xmlSitemapURL string, options CrawlOptions) error {
@@ -55,10 +60,65 @@ func createWorkFunction(index int, url url.URL) func() WorkResult {
 			}
 		}
 
+		links, err := getDependentRequests(url, bytes.NewReader(response.Body()))
+		if err != nil {
+			return WorkResult{
+				Error: err,
+			}
+		}
+
+		for _, link := range links {
+			fmt.Println(link.String())
+		}
+
 		return WorkResult{
 			Message: fmt.Sprintf("%05d  %03d %9s %15s  %s", index+1, response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), url.String()),
 		}
 	}
+}
+
+func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {
+
+	doc, err := goquery.NewDocumentFromReader(input)
+	if err != nil {
+		return nil, err
+	}
+
+	var urls []url.URL
+
+	// base url
+	base, _ := doc.Find("base[href]").Attr("href")
+	if base == "" {
+		base = baseURL.Scheme + "://" + baseURL.Host
+	} else if strings.HasPrefix(base, "/") {
+		base = baseURL.Scheme + "://" + baseURL.Host + base
+	}
+
+	// get all links
+	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
+		// For each item found, get the band and title
+		href, _ := s.Attr("href")
+
+		if strings.HasPrefix(href, "/") {
+			href = baseURL.Scheme + "://" + baseURL.Host + href
+		} else if !strings.HasPrefix(href, "http://") && !strings.HasPrefix(href, "https://") {
+			href = strings.TrimSuffix(base, "/") + href
+		}
+
+		hrefURL, err := url.Parse(href)
+		if err != nil {
+			return
+		}
+
+		// ignore external links
+		if hrefURL.Host != baseURL.Host {
+			return
+		}
+
+		urls = append(urls, *hrefURL)
+	})
+
+	return urls, nil
 }
 
 func getURLs(xmlSitemapURL string) ([]url.URL, error) {
