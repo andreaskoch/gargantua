@@ -147,7 +147,7 @@ func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {
 		if strings.HasPrefix(href, "/") {
 			href = baseURL.Scheme + "://" + baseURL.Host + href
 		} else if !strings.HasPrefix(href, "http://") && !strings.HasPrefix(href, "https://") {
-			href = strings.TrimSuffix(base, "/") + href
+			href = strings.TrimSuffix(base, "/") + "/" + href
 		}
 
 		hrefURL, err := url.Parse(href)
