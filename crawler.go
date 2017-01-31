@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -20,6 +21,9 @@ type URLCrawlRequest struct {
 	ParentURL url.URL
 	TargetURL url.URL
 }
+
+var producer_wg = &sync.WaitGroup{}
+var consumer_wg = &sync.WaitGroup{}
 
 func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 
@@ -42,42 +46,73 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 
 	// crawl all URLs in the queue
 	results := StartDispatcher(50)
+
 	go func() {
-		for urlCrawlRequest := range crawlRequestQueue {
 
-			// skip URLs we have already seen
-			urlLock.RLock()
-			_, alreadyVisited := visitedURLs[urlCrawlRequest.TargetURL.String()]
-			urlLock.RUnlock()
+		for {
+			select {
+			case urlCrawlRequest, ok := <-crawlRequestQueue:
+				{
+					if !ok {
+						return
+					}
 
-			if alreadyVisited {
-				continue
+					// skip URLs we have already seen
+					urlLock.RLock()
+					_, alreadyVisited := visitedURLs[urlCrawlRequest.TargetURL.String()]
+					urlLock.RUnlock()
+
+					if alreadyVisited {
+						continue
+					}
+
+					// mark the URL as visited
+					urlLock.Lock()
+					visitedURLs[urlCrawlRequest.TargetURL.String()] = urlCrawlRequest.TargetURL
+					urlLock.Unlock()
+
+					producer_wg.Add(1)
+
+					go func(urlToCrawl URLCrawlRequest) {
+						WorkQueue <- createWorkRequest(urlToCrawl, crawlRequestQueue)
+					}(urlCrawlRequest)
+				}
+
 			}
 
-			// mark the URL as visited
-			urlLock.Lock()
-			visitedURLs[urlCrawlRequest.TargetURL.String()] = urlCrawlRequest.TargetURL
-			urlLock.Unlock()
+		}
 
-			go func(urlToCrawl URLCrawlRequest) {
-				WorkQueue <- createWorkRequest(urlToCrawl, crawlRequestQueue)
-			}(urlCrawlRequest)
+	}()
+
+	consumer_wg.Add(1)
+	go func() {
+		defer consumer_wg.Done()
+
+		for {
+
+			select {
+			case result, ok := <-results:
+				if !ok {
+					return
+				}
+
+				if result.Error != nil {
+					fmt.Fprintf(os.Stderr, "%s\n", result.Error)
+				} else {
+					fmt.Fprintf(os.Stdout, "%s\n", result.Message)
+				}
+
+			case _ = <-time.After(time.Second * 60):
+				if len(WorkQueue) == 0 && len(crawlRequestQueue) == 0 {
+					return
+				}
+			}
 
 		}
 	}()
 
-	// present the results
-	doneCounter := 0
-	for result := range results {
-
-		if result.Error != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", result.Error)
-		} else {
-			fmt.Fprintf(os.Stdout, "%s\n", result.Message)
-		}
-
-		doneCounter++
-	}
+	producer_wg.Wait()
+	consumer_wg.Wait()
 
 	return nil
 }
@@ -87,6 +122,7 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 	return WorkRequest{
 		URL: urlToCrawl.TargetURL,
 		Execute: func() WorkResult {
+			defer producer_wg.Done()
 
 			// read the URL
 			response, err := readURL(urlToCrawl.TargetURL)
