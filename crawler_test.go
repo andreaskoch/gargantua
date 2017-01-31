@@ -42,5 +42,6 @@ func Test_crawl_validSitemap(t *testing.T) {
 
 	defer testSitemapServer.Close()
 
-	crawl(testSitemapServer.URL, CrawlOptions{})
+	testServerURL, _ := url.Parse(testSitemapServer.URL)
+	crawl(*testServerURL, CrawlOptions{})
 }

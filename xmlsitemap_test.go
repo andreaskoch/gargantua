@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -16,7 +17,8 @@ func Test_getXMLSitemap_InvalidContent_ErrorIsReturned(t *testing.T) {
 
 	defer testSitemapServer.Close()
 
-	_, err := getXMLSitemap(testSitemapServer.URL)
+	testServerURL, _ := url.Parse(testSitemapServer.URL)
+	_, err := getXMLSitemap(*testServerURL)
 
 	if err == nil {
 		t.Fail()
@@ -34,7 +36,8 @@ func Test_getXMLSitemap_SitemapExists_SitemapIsReturned(t *testing.T) {
 
 	defer testSitemapServer.Close()
 
-	sitemap, err := getXMLSitemap(testSitemapServer.URL)
+	testServerURL, _ := url.Parse(testSitemapServer.URL)
+	sitemap, err := getXMLSitemap(*testServerURL)
 
 	if err != nil {
 		t.Fail()

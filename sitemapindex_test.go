@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -18,7 +19,8 @@ func Test_getSitemapIndex_NoIndexGiven_ErrorIsReturned(t *testing.T) {
 
 	defer testSitemapServer.Close()
 
-	_, err := getSitemapIndex(testSitemapServer.URL)
+	testServerURL, _ := url.Parse(testSitemapServer.URL)
+	_, err := getSitemapIndex(*testServerURL)
 
 	if err == nil {
 		t.Fail()
@@ -44,7 +46,8 @@ func Test_getSitemapIndex_IndexExists_IndexIsNotEmpty(t *testing.T) {
 
 	defer testSitemapServer.Close()
 
-	sitemapIndex, err := getSitemapIndex(testSitemapServer.URL)
+	testServerURL, _ := url.Parse(testSitemapServer.URL)
+	sitemapIndex, err := getSitemapIndex(*testServerURL)
 
 	if err != nil {
 		t.Fail()

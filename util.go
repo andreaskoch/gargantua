@@ -4,13 +4,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
 type Response struct {
-	body       []byte
-	statusCode int
-	duration   time.Duration
+	body        []byte
+	statusCode  int
+	duration    time.Duration
+	contentType string
 }
 
 func (response *Response) Body() []byte {
@@ -29,6 +31,14 @@ func (response *Response) Duration() time.Duration {
 	return response.duration
 }
 
+func (response *Response) ContentType() string {
+	return response.contentType
+}
+
+func (response *Response) IsHTML() bool {
+	return strings.HasPrefix(response.contentType, "text/html")
+}
+
 func readURL(url url.URL) (Response, error) {
 	startTime := time.Now()
 	resp, fetchErr := http.Get(url.String())
@@ -44,9 +54,16 @@ func readURL(url url.URL) (Response, error) {
 
 	duration := time.Since(startTime)
 
+	// content type
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = http.DetectContentType(body)
+	}
+
 	return Response{
-		body:       body,
-		statusCode: resp.StatusCode,
-		duration:   duration,
+		body:        body,
+		statusCode:  resp.StatusCode,
+		duration:    duration,
+		contentType: contentType,
 	}, nil
 }

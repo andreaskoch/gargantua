@@ -96,19 +96,23 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 				}
 			}
 
-			// get dependent links
-			links, err := getDependentRequests(urlToCrawl.TargetURL, bytes.NewReader(response.Body()))
-			if err != nil {
-				return WorkResult{
-					Error: err,
-				}
-			}
+			if response.IsHTML() {
 
-			for _, link := range links {
-				newUrls <- URLCrawlRequest{
-					ParentURL: urlToCrawl.TargetURL,
-					TargetURL: link,
+				// get dependent links
+				links, err := getDependentRequests(urlToCrawl.TargetURL, bytes.NewReader(response.Body()))
+				if err != nil {
+					return WorkResult{
+						Error: err,
+					}
 				}
+
+				for _, link := range links {
+					newUrls <- URLCrawlRequest{
+						ParentURL: urlToCrawl.TargetURL,
+						TargetURL: link,
+					}
+				}
+
 			}
 
 			return WorkResult{
