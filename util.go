@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -28,9 +29,9 @@ func (response *Response) Duration() time.Duration {
 	return response.duration
 }
 
-func readURL(url string) (Response, error) {
+func readURL(url url.URL) (Response, error) {
 	startTime := time.Now()
-	resp, fetchErr := http.Get(url)
+	resp, fetchErr := http.Get(url.String())
 	if fetchErr != nil {
 		return Response{}, fetchErr
 	}

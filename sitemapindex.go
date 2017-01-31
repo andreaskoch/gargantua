@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/xml"
+	"net/url"
 	"strings"
 )
 
-func getSitemapIndex(xmlSitemapURL string) (SitemapIndex, error) {
+func getSitemapIndex(xmlSitemapURL url.URL) (SitemapIndex, error) {
 	response, readErr := readURL(xmlSitemapURL)
 	if readErr != nil {
 		return SitemapIndex{}, readErr

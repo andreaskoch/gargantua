@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/xml"
+	"net/url"
 	"strings"
 )
 
-func getXMLSitemap(xmlSitemapURL string) (XMLSitemap, error) {
+func getXMLSitemap(xmlSitemapURL url.URL) (XMLSitemap, error) {
 
 	response, readErr := readURL(xmlSitemapURL)
 	if readErr != nil {

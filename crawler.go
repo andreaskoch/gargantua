@@ -16,7 +16,12 @@ import (
 var urlLock = sync.RWMutex{}
 var visitedURLs = make(map[string]url.URL)
 
-func crawl(xmlSitemapURL string, options CrawlOptions) error {
+type URLCrawlRequest struct {
+	ParentURL url.URL
+	TargetURL url.URL
+}
+
+func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 
 	// read the XML sitemap as a initial source for URLs
 	urlsFromXMLSitemap, err := getURLs(xmlSitemapURL)
@@ -25,21 +30,24 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 	}
 
 	// the URL queue
-	urlQueue := make(chan url.URL, len(urlsFromXMLSitemap))
+	crawlRequestQueue := make(chan URLCrawlRequest, len(urlsFromXMLSitemap))
 
 	// fill the URL queue with the URLs from the XML sitemap
-	for _, xmlSitemapURL := range urlsFromXMLSitemap {
-		urlQueue <- xmlSitemapURL
+	for _, xmlSitemapURLEntry := range urlsFromXMLSitemap {
+		crawlRequestQueue <- URLCrawlRequest{
+			ParentURL: xmlSitemapURL,
+			TargetURL: xmlSitemapURLEntry,
+		}
 	}
 
 	// crawl all URLs in the queue
 	results := StartDispatcher(50)
 	go func() {
-		for urlFromQueue := range urlQueue {
+		for urlCrawlRequest := range crawlRequestQueue {
 
 			// skip URLs we have already seen
 			urlLock.RLock()
-			_, alreadyVisited := visitedURLs[urlFromQueue.String()]
+			_, alreadyVisited := visitedURLs[urlCrawlRequest.TargetURL.String()]
 			urlLock.RUnlock()
 
 			if alreadyVisited {
@@ -48,12 +56,12 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 
 			// mark the URL as visited
 			urlLock.Lock()
-			visitedURLs[urlFromQueue.String()] = urlFromQueue
+			visitedURLs[urlCrawlRequest.TargetURL.String()] = urlCrawlRequest.TargetURL
 			urlLock.Unlock()
 
-			go func(urlToCrawl url.URL) {
-				WorkQueue <- createWorkRequest(urlToCrawl, urlQueue)
-			}(urlFromQueue)
+			go func(urlToCrawl URLCrawlRequest) {
+				WorkQueue <- createWorkRequest(urlToCrawl, crawlRequestQueue)
+			}(urlCrawlRequest)
 
 		}
 	}()
@@ -74,14 +82,14 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 	return nil
 }
 
-func createWorkRequest(url url.URL, newUrls chan url.URL) WorkRequest {
+func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest) WorkRequest {
 
 	return WorkRequest{
-		URL: url,
+		URL: urlToCrawl.TargetURL,
 		Execute: func() WorkResult {
 
 			// read the URL
-			response, err := readURL(url.String())
+			response, err := readURL(urlToCrawl.TargetURL)
 			if err != nil {
 				return WorkResult{
 					Error: err,
@@ -89,7 +97,7 @@ func createWorkRequest(url url.URL, newUrls chan url.URL) WorkRequest {
 			}
 
 			// get dependent links
-			links, err := getDependentRequests(url, bytes.NewReader(response.Body()))
+			links, err := getDependentRequests(urlToCrawl.TargetURL, bytes.NewReader(response.Body()))
 			if err != nil {
 				return WorkResult{
 					Error: err,
@@ -97,11 +105,14 @@ func createWorkRequest(url url.URL, newUrls chan url.URL) WorkRequest {
 			}
 
 			for _, link := range links {
-				newUrls <- link
+				newUrls <- URLCrawlRequest{
+					ParentURL: urlToCrawl.TargetURL,
+					TargetURL: link,
+				}
 			}
 
 			return WorkResult{
-				Message: fmt.Sprintf("%03d %9s %15s  %s", response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), url.String()),
+				Message: fmt.Sprintf("%03d %9s %15s  %s  %s", response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), urlToCrawl.ParentURL.String(), urlToCrawl.TargetURL.String()),
 			}
 		}}
 
@@ -151,7 +162,7 @@ func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {
 	return urls, nil
 }
 
-func getURLs(xmlSitemapURL string) ([]url.URL, error) {
+func getURLs(xmlSitemapURL url.URL) ([]url.URL, error) {
 
 	var urls []url.URL
 
@@ -166,14 +177,14 @@ func getURLs(xmlSitemapURL string) ([]url.URL, error) {
 	}
 
 	if isInvalidSitemapIndexContent(indexError) && isInvalidXMLSitemapContent(sitemapError) {
-		return nil, fmt.Errorf("%q is neither a sitemap index nor a XML sitemap", xmlSitemapURL)
+		return nil, fmt.Errorf("%q is neither a sitemap index nor a XML sitemap", xmlSitemapURL.String())
 	}
 
 	return urls, nil
 
 }
 
-func getURLsFromSitemap(xmlSitemapURL string) ([]url.URL, error) {
+func getURLsFromSitemap(xmlSitemapURL url.URL) ([]url.URL, error) {
 
 	var urls []url.URL
 
@@ -195,7 +206,7 @@ func getURLsFromSitemap(xmlSitemapURL string) ([]url.URL, error) {
 	return urls, nil
 }
 
-func getURLsFromSitemapIndex(xmlSitemapURL string) ([]url.URL, error) {
+func getURLsFromSitemapIndex(xmlSitemapURL url.URL) ([]url.URL, error) {
 
 	var urls []url.URL
 
@@ -206,7 +217,12 @@ func getURLsFromSitemapIndex(xmlSitemapURL string) ([]url.URL, error) {
 
 	for _, sitemap := range sitemapIndex.Sitemaps {
 
-		sitemapUrls, err := getURLsFromSitemap(sitemap.Location)
+		locationURL, err := url.Parse(sitemap.Location)
+		if err != nil {
+			return nil, err
+		}
+
+		sitemapUrls, err := getURLsFromSitemap(*locationURL)
 		if err != nil {
 			return nil, err
 		}
