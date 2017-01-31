@@ -8,33 +8,59 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
+var urlLock = sync.RWMutex{}
+var visitedURLs = make(map[string]url.URL)
+
 func crawl(xmlSitemapURL string, options CrawlOptions) error {
 
-	urls, err := getURLs(xmlSitemapURL)
+	// read the XML sitemap as a initial source for URLs
+	urlsFromXMLSitemap, err := getURLs(xmlSitemapURL)
 	if err != nil {
 		return err
 	}
 
-	results := StartDispatcher(50)
+	// the URL queue
+	urlQueue := make(chan url.URL, len(urlsFromXMLSitemap))
 
-	for index, url := range urls {
-
-		// Now, we take the delay, and the person's name, and make a WorkRequest out of them.
-		work := WorkRequest{Name: fmt.Sprintf("%000d %s", index+1, url.String()), Execute: createWorkFunction(index, url)}
-
-		// Push the work onto the queue.
-		go func() {
-			WorkQueue <- work
-		}()
+	// fill the URL queue with the URLs from the XML sitemap
+	for _, xmlSitemapURL := range urlsFromXMLSitemap {
+		urlQueue <- xmlSitemapURL
 	}
 
-	resultCounter := 0
+	// crawl all URLs in the queue
+	results := StartDispatcher(50)
+	go func() {
+		for urlFromQueue := range urlQueue {
+
+			// skip URLs we have already seen
+			urlLock.RLock()
+			_, alreadyVisited := visitedURLs[urlFromQueue.String()]
+			urlLock.RUnlock()
+
+			if alreadyVisited {
+				continue
+			}
+
+			// mark the URL as visited
+			urlLock.Lock()
+			visitedURLs[urlFromQueue.String()] = urlFromQueue
+			urlLock.Unlock()
+
+			go func(urlToCrawl url.URL) {
+				WorkQueue <- createWorkRequest(urlToCrawl, urlQueue)
+			}(urlFromQueue)
+
+		}
+	}()
+
+	// present the results
+	doneCounter := 0
 	for result := range results {
-		resultCounter++
 
 		if result.Error != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", result.Error)
@@ -42,39 +68,43 @@ func crawl(xmlSitemapURL string, options CrawlOptions) error {
 			fmt.Fprintf(os.Stdout, "%s\n", result.Message)
 		}
 
-		if resultCounter >= len(urls) {
-			close(results)
-		}
+		doneCounter++
 	}
 
 	return nil
 }
 
-func createWorkFunction(index int, url url.URL) func() WorkResult {
-	return func() WorkResult {
+func createWorkRequest(url url.URL, newUrls chan url.URL) WorkRequest {
 
-		response, err := readURL(url.String())
-		if err != nil {
-			return WorkResult{
-				Error: err,
+	return WorkRequest{
+		URL: url,
+		Execute: func() WorkResult {
+
+			// read the URL
+			response, err := readURL(url.String())
+			if err != nil {
+				return WorkResult{
+					Error: err,
+				}
 			}
-		}
 
-		links, err := getDependentRequests(url, bytes.NewReader(response.Body()))
-		if err != nil {
-			return WorkResult{
-				Error: err,
+			// get dependent links
+			links, err := getDependentRequests(url, bytes.NewReader(response.Body()))
+			if err != nil {
+				return WorkResult{
+					Error: err,
+				}
 			}
-		}
 
-		for _, link := range links {
-			fmt.Println(link.String())
-		}
+			for _, link := range links {
+				newUrls <- link
+			}
 
-		return WorkResult{
-			Message: fmt.Sprintf("%05d  %03d %9s %15s  %s", index+1, response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), url.String()),
-		}
-	}
+			return WorkResult{
+				Message: fmt.Sprintf("%03d %9s %15s  %s", response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), url.String()),
+			}
+		}}
+
 }
 
 func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {

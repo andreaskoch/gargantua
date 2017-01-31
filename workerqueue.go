@@ -1,6 +1,6 @@
 package main
 
-import "fmt"
+import "net/url"
 
 type WorkResult struct {
 	Error   error
@@ -8,7 +8,7 @@ type WorkResult struct {
 }
 
 type WorkRequest struct {
-	Name    string
+	URL     url.URL
 	Execute func() WorkResult
 }
 
@@ -26,7 +26,6 @@ func StartDispatcher(nworkers int) chan WorkResult {
 
 	// Now, create all of our workers.
 	for i := 0; i < nworkers; i++ {
-		fmt.Println("Starting worker", i+1)
 		worker := NewWorker(i+1, WorkerQueue, results)
 		worker.Start()
 	}
