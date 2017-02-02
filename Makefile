@@ -1,2 +1,2 @@
 build:
-	go build -o bin/sitemap-crawler
+	go build -o bin/gargantua
