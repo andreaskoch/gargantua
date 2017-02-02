@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net"
 	"net/url"
 	"os"
 	"strings"
@@ -45,7 +44,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 	}
 
 	// crawl all URLs in the queue
-	results := StartDispatcher(50)
+	results := StartDispatcher(options.NumberOfParallelRequests)
 
 	go func() {
 
@@ -275,5 +274,5 @@ func getURLsFromSitemapIndex(xmlSitemapURL url.URL) ([]url.URL, error) {
 }
 
 type CrawlOptions struct {
-	Hosts []net.IP
+	NumberOfParallelRequests int
 }
