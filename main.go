@@ -37,7 +37,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	crawl(*targetURL, CrawlOptions{int(numberOfParallelRequests)})
+	dashboard()
+
+	done := make(chan bool)
+	go func() {
+		crawl(*targetURL, CrawlOptions{int(numberOfParallelRequests)})
+		done <- true
+	}()
+
+	<-done
+
 }
 
 func usage(writer io.Writer) {

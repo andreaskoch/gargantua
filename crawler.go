@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -96,12 +95,6 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 				}
 
 				updateStatistics(result)
-
-				if result.Error() != nil {
-					fmt.Fprintf(os.Stderr, "%s\n", result.Error())
-				} else {
-					fmt.Fprintf(os.Stdout, "%s\n", result.String())
-				}
 
 			case _ = <-time.After(time.Second * 60):
 				if len(WorkQueue) == 0 && len(crawlRequestQueue) == 0 {
