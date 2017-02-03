@@ -11,7 +11,8 @@ import (
 type Response struct {
 	body        []byte
 	statusCode  int
-	duration    time.Duration
+	startTime   time.Time
+	endTime     time.Time
 	contentType string
 }
 
@@ -27,8 +28,12 @@ func (response *Response) StatusCode() int {
 	return response.statusCode
 }
 
-func (response *Response) Duration() time.Duration {
-	return response.duration
+func (response *Response) StartTime() time.Time {
+	return response.startTime
+}
+
+func (response *Response) EndTime() time.Time {
+	return response.endTime
 }
 
 func (response *Response) ContentType() string {
@@ -40,7 +45,7 @@ func (response *Response) IsHTML() bool {
 }
 
 func readURL(url url.URL) (Response, error) {
-	startTime := time.Now()
+	startTime := time.Now().UTC()
 	resp, fetchErr := http.Get(url.String())
 	if fetchErr != nil {
 		return Response{}, fetchErr
@@ -52,7 +57,7 @@ func readURL(url url.URL) (Response, error) {
 		return Response{}, readErr
 	}
 
-	duration := time.Since(startTime)
+	endTime := time.Now().UTC()
 
 	// content type
 	contentType := resp.Header.Get("Content-Type")
@@ -63,7 +68,8 @@ func readURL(url url.URL) (Response, error) {
 	return Response{
 		body:        body,
 		statusCode:  resp.StatusCode,
-		duration:    duration,
+		startTime:   startTime,
+		endTime:     endTime,
 		contentType: contentType,
 	}, nil
 }

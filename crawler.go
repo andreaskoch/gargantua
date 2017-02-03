@@ -95,10 +95,12 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 					return
 				}
 
-				if result.Error != nil {
-					fmt.Fprintf(os.Stderr, "%s\n", result.Error)
+				updateStatistics(result)
+
+				if result.Error() != nil {
+					fmt.Fprintf(os.Stderr, "%s\n", result.Error())
 				} else {
-					fmt.Fprintf(os.Stdout, "%s\n", result.Message)
+					fmt.Fprintf(os.Stdout, "%s\n", result.String())
 				}
 
 			case _ = <-time.After(time.Second * 60):
@@ -127,7 +129,7 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 			response, err := readURL(urlToCrawl.TargetURL)
 			if err != nil {
 				return WorkResult{
-					Error: err,
+					err: err,
 				}
 			}
 
@@ -137,7 +139,7 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 				links, err := getDependentRequests(urlToCrawl.TargetURL, bytes.NewReader(response.Body()))
 				if err != nil {
 					return WorkResult{
-						Error: err,
+						err: err,
 					}
 				}
 
@@ -151,7 +153,14 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 			}
 
 			return WorkResult{
-				Message: fmt.Sprintf("%03d %9s %15s  %s  %s", response.StatusCode(), fmt.Sprintf("%d", response.Size()), fmt.Sprintf("%s", response.Duration()), urlToCrawl.ParentURL.String(), urlToCrawl.TargetURL.String()),
+				parentURL: urlToCrawl.ParentURL,
+				url:       urlToCrawl.TargetURL,
+
+				responseSize: response.Size(),
+				statusCode:   response.StatusCode(),
+				startTime:    response.StartTime(),
+				endTime:      response.EndTime(),
+				contentType:  response.ContentType(),
 			}
 		}}
 
