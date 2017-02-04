@@ -38,17 +38,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	done := make(chan bool)
+	stopTheCrawler := make(chan bool)
+	crawlerIsDone := make(chan bool)
+
 	go func() {
 		crawl(*targetURL, CrawlOptions{
 			NumberOfParallelRequests: int(numberOfParallelRequests),
 			Timeout:                  time.Second * 60,
-		})
-		done <- true
+		}, stopTheCrawler, crawlerIsDone)
 	}()
 
-	dashboard(time.Now())
-	<-done
+	dashboard(time.Now(), stopTheCrawler)
+
+	<-crawlerIsDone
 
 }
 

@@ -20,10 +20,7 @@ type URLCrawlRequest struct {
 	TargetURL url.URL
 }
 
-var producer_wg = &sync.WaitGroup{}
-var consumer_wg = &sync.WaitGroup{}
-
-func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
+func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop, crawlerIsDone chan bool) error {
 
 	// read the XML sitemap as a initial source for URLs
 	urlsFromXMLSitemap, err := getURLs(xmlSitemapURL)
@@ -43,12 +40,21 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 	}
 
 	// crawl all URLs in the queue
-	results := StartDispatcher(options.NumberOfParallelRequests)
+	var stopWorkers chan bool
+	done := StartDispatcher(options.NumberOfParallelRequests, stopWorkers)
 
 	go func() {
 
 		for {
 			select {
+			case <-stop:
+				fmt.Println("Receive the stop signal 1")
+				stopWorkers <- true
+
+			case <-done:
+				crawlerIsDone <- true
+				return
+
 			case urlCrawlRequest, ok := <-crawlRequestQueue:
 				{
 					if !ok {
@@ -69,11 +75,10 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 					visitedURLs[urlCrawlRequest.TargetURL.String()] = urlCrawlRequest.TargetURL
 					urlLock.Unlock()
 
-					producer_wg.Add(1)
+					go func() {
+						WorkQueue <- createWorkRequest(urlCrawlRequest, crawlRequestQueue)
+					}()
 
-					go func(urlToCrawl URLCrawlRequest) {
-						WorkQueue <- createWorkRequest(urlToCrawl, crawlRequestQueue)
-					}(urlCrawlRequest)
 				}
 
 			}
@@ -82,31 +87,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 
 	}()
 
-	consumer_wg.Add(1)
-	go func() {
-		defer consumer_wg.Done()
-
-		for {
-
-			select {
-			case result, ok := <-results:
-				if !ok {
-					return
-				}
-
-				updateStatistics(result)
-
-			case _ = <-time.After(options.Timeout):
-				if len(WorkQueue) == 0 && len(crawlRequestQueue) == 0 {
-					return
-				}
-			}
-
-		}
-	}()
-
-	producer_wg.Wait()
-	consumer_wg.Wait()
+	crawlerIsDone <- true
 
 	return nil
 }
@@ -115,15 +96,12 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 
 	return WorkRequest{
 		URL: urlToCrawl.TargetURL,
-		Execute: func(workerID, numberOfWorkers int) WorkResult {
-			defer producer_wg.Done()
+		Execute: func(workerID, numberOfWorkers int) {
 
 			// read the URL
 			response, err := readURL(urlToCrawl.TargetURL)
 			if err != nil {
-				return WorkResult{
-					err: err,
-				}
+				return
 			}
 
 			if response.IsHTML() {
@@ -131,9 +109,7 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 				// get dependent links
 				links, err := getDependentRequests(urlToCrawl.TargetURL, bytes.NewReader(response.Body()))
 				if err != nil {
-					return WorkResult{
-						err: err,
-					}
+					return
 				}
 
 				for _, link := range links {
@@ -145,7 +121,7 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 
 			}
 
-			return WorkResult{
+			workResult := WorkResult{
 				parentURL: urlToCrawl.ParentURL,
 				url:       urlToCrawl.TargetURL,
 
@@ -158,6 +134,10 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 				endTime:      response.EndTime(),
 				contentType:  response.ContentType(),
 			}
+
+			updateStatistics(workResult)
+
+			return
 		}}
 
 }

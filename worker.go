@@ -5,14 +5,13 @@ import "fmt"
 // NewWorker creates, and returns a new Worker object. Its only argument
 // is a channel that the worker can add itself to whenever it is done its
 // work.
-func NewWorker(id int, workerQueue chan chan WorkRequest, results chan WorkResult) Worker {
+func NewWorker(id int, workerQueue chan chan WorkRequest) Worker {
 	// Create, and return the worker.
 	worker := Worker{
 		ID:          id,
 		Work:        make(chan WorkRequest),
 		WorkerQueue: workerQueue,
 		QuitChan:    make(chan bool),
-		results:     results,
 	}
 
 	return worker
@@ -23,7 +22,6 @@ type Worker struct {
 	Work        chan WorkRequest
 	WorkerQueue chan chan WorkRequest
 	QuitChan    chan bool
-	results     chan WorkResult
 }
 
 // This function "starts" the worker by starting a goroutine, that is
@@ -36,8 +34,7 @@ func (w *Worker) Start() {
 
 			select {
 			case work := <-w.Work:
-				result := work.Execute(w.ID, cap(WorkerQueue))
-				w.results <- result
+				work.Execute(w.ID, cap(WorkerQueue))
 
 			case <-w.QuitChan:
 				// We have been asked to stop.

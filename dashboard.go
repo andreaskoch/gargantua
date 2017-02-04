@@ -8,7 +8,7 @@ import (
 	"github.com/gizak/termui"
 )
 
-func dashboard(startTime time.Time) {
+func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	if err := termui.Init(); err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func dashboard(startTime time.Time) {
 	elapsedTime.BorderLabel = "Elapsed time"
 	elapsedTime.BorderFg = termui.ColorCyan
 
-	draw := func(t int) {
+	draw := func() {
 
 		snapshot := stats.LastSnapshot()
 
@@ -138,12 +138,15 @@ func dashboard(startTime time.Time) {
 	})
 
 	termui.Handle("/sys/kbd/q", func(termui.Event) {
+		fmt.Println("Send the stop signal")
+		stopTheCrawler <- true
+
 		termui.StopLoop()
+		termui.Clear()
 	})
 
 	termui.Handle("/timer/1s", func(e termui.Event) {
-		t := e.Data.(termui.EvtTimer)
-		draw(int(t.Count))
+		draw()
 	})
 
 	termui.Loop()
