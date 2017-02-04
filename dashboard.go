@@ -1,109 +1,211 @@
 package main
 
-import ui "github.com/gizak/termui"
-import "math"
+import (
+	"fmt"
+	"strings"
+	"time"
 
-func dashboard() {
-	if err := ui.Init(); err != nil {
+	"github.com/gizak/termui"
+)
+
+func dashboard(startTime time.Time) {
+	if err := termui.Init(); err != nil {
 		panic(err)
 	}
-	defer ui.Close()
+	defer termui.Close()
 
-	strs := []string{"[0] gizak/termui", "[1] editbox.go", "[2] iterrupt.go", "[3] keyboard.go", "[4] output.go", "[5] random_out.go", "[6] dashboard.go", "[7] nsf/termbox-go"}
-	logWindow := ui.NewList()
-	logWindow.Items = strs
-	logWindow.ItemFgColor = ui.ColorYellow
+	var snapshots []Snapshot
+
+	logWindow := termui.NewList()
+	logWindow.ItemFgColor = termui.ColorYellow
 	logWindow.BorderLabel = "Log"
-	logWindow.Height = 14
-	logWindow.Width = 54
+	logWindow.Height = 22
 	logWindow.Y = 0
 
-	totalBytesDownloaded := ui.NewPar("0")
-	totalBytesDownloaded.Width = 25
+	totalBytesDownloaded := termui.NewPar("")
 	totalBytesDownloaded.Height = 3
-	totalBytesDownloaded.Y = 11
-	totalBytesDownloaded.X = 56
-	totalBytesDownloaded.TextFgColor = ui.ColorWhite
-	totalBytesDownloaded.BorderLabel = "Bytes downloaded"
-	totalBytesDownloaded.BorderFg = ui.ColorCyan
+	totalBytesDownloaded.TextFgColor = termui.ColorWhite
+	totalBytesDownloaded.BorderLabel = "Data downloaded"
+	totalBytesDownloaded.BorderFg = termui.ColorCyan
 
-	totalNumberOfRequests := ui.NewPar("0")
-	totalNumberOfRequests.Width = 25
+	totalNumberOfRequests := termui.NewPar("")
 	totalNumberOfRequests.Height = 3
-	totalNumberOfRequests.Y = 14
-	totalNumberOfRequests.X = 56
-	totalNumberOfRequests.TextFgColor = ui.ColorWhite
-	totalNumberOfRequests.BorderLabel = "Number of requests"
-	totalNumberOfRequests.BorderFg = ui.ColorCyan
+	totalNumberOfRequests.TextFgColor = termui.ColorWhite
+	totalNumberOfRequests.BorderLabel = "URLs crawled"
+	totalNumberOfRequests.BorderFg = termui.ColorCyan
 
-	averageSizeInBytes := ui.Sparkline{}
-	averageSizeInBytes.Height = 1
-	averageSizeInBytes.Title = "⟨size⟩"
-	spdata := []int{4, 2, 1, 6, 3, 9, 1, 4, 2, 15, 14, 9, 8, 6, 10, 13, 15, 12, 10, 5, 3, 6, 1, 7, 10, 10, 14, 13, 6, 4, 2, 1, 6, 3, 9, 1, 4, 2, 15, 14, 9, 8, 6, 10, 13, 15, 12, 10, 5, 3, 6, 1, 7, 10, 10, 14, 13, 6, 4, 2, 1, 6, 3, 9, 1, 4, 2, 15, 14, 9, 8, 6, 10, 13, 15, 12, 10, 5, 3, 6, 1, 7, 10, 10, 14, 13, 6, 4, 2, 1, 6, 3, 9, 1, 4, 2, 15, 14, 9, 8, 6, 10, 13, 15, 12, 10, 5, 3, 6, 1, 7, 10, 10, 14, 13, 6}
-	averageSizeInBytes.Data = spdata
-	averageSizeInBytes.LineColor = ui.ColorCyan
-	averageSizeInBytes.TitleColor = ui.ColorWhite
+	requestsPerSecond := termui.NewPar("")
+	requestsPerSecond.Height = 3
+	requestsPerSecond.TextFgColor = termui.ColorWhite
+	requestsPerSecond.BorderLabel = "URLs/second"
+	requestsPerSecond.BorderFg = termui.ColorCyan
 
-	averageDuration := ui.Sparkline{}
-	averageDuration.Height = 1
-	averageDuration.Title = "⟨duration⟩"
-	averageDuration.Data = spdata
-	averageDuration.TitleColor = ui.ColorWhite
-	averageDuration.LineColor = ui.ColorRed
+	averageResponseTime := termui.NewPar("")
+	averageResponseTime.Height = 3
+	averageResponseTime.TextFgColor = termui.ColorWhite
+	averageResponseTime.BorderLabel = "Average response time"
+	averageResponseTime.BorderFg = termui.ColorCyan
 
-	averages := ui.NewSparklines(averageSizeInBytes, averageDuration)
-	averages.BorderLabel = "Averages"
-	averages.Width = 25
-	averages.Height = 7
-	averages.Y = 18
-	averages.X = 56
+	numberOfWorkers := termui.NewPar("")
+	numberOfWorkers.Height = 3
+	numberOfWorkers.TextFgColor = termui.ColorWhite
+	numberOfWorkers.BorderLabel = "Number of workers"
+	numberOfWorkers.BorderFg = termui.ColorCyan
 
-	sinps := (func() []float64 {
-		n := 220
-		ps := make([]float64, n)
-		for i := range ps {
-			ps[i] = 1 + math.Sin(float64(i)/5)
-		}
-		return ps
-	})()
+	averageSizeInBytes := termui.NewPar("")
+	averageSizeInBytes.Height = 3
+	averageSizeInBytes.TextFgColor = termui.ColorWhite
+	averageSizeInBytes.BorderLabel = "Average request size"
+	averageSizeInBytes.BorderFg = termui.ColorCyan
 
-	requestsByStatusCode := ui.NewBarChart()
-	bcdata := []int{3, 2, 5, 3, 9, 5, 3, 2, 5, 8, 3, 2, 4, 5, 3, 2, 5, 7, 5, 3, 2, 6, 7, 4, 6, 3, 6, 7, 8, 3, 6, 4, 5, 3, 2, 4, 6, 4, 8, 5, 9, 4, 3, 6, 5, 3, 6}
-	bclabels := []string{"S0", "S1", "S2", "S3", "S4", "S5"}
-	requestsByStatusCode.BorderLabel = "Requests by status code"
-	requestsByStatusCode.Width = 26
-	requestsByStatusCode.Height = 11
-	requestsByStatusCode.X = 56
-	requestsByStatusCode.Y = 0
-	requestsByStatusCode.DataLabels = bclabels
-	requestsByStatusCode.BarColor = ui.ColorGreen
-	requestsByStatusCode.NumColor = ui.ColorBlack
+	numberOfErrors := termui.NewPar("")
+	numberOfErrors.Height = 3
+	numberOfErrors.TextFgColor = termui.ColorWhite
+	numberOfErrors.BorderLabel = "Number of 4xx errors"
+	numberOfErrors.BorderFg = termui.ColorCyan
 
-	requestsPerSecondLineChart := ui.NewLineChart()
-	requestsPerSecondLineChart.BorderLabel = "Requests per second"
-	requestsPerSecondLineChart.Data = sinps
-	requestsPerSecondLineChart.Width = 54
-	requestsPerSecondLineChart.Height = 11
-	requestsPerSecondLineChart.X = 0
-	requestsPerSecondLineChart.Y = 14
-	requestsPerSecondLineChart.AxesColor = ui.ColorWhite
-	requestsPerSecondLineChart.LineColor = ui.ColorYellow | ui.AttrBold
+	elapsedTime := termui.NewPar("")
+	elapsedTime.Height = 3
+	elapsedTime.TextFgColor = termui.ColorWhite
+	elapsedTime.BorderLabel = "Elapsed time"
+	elapsedTime.BorderFg = termui.ColorCyan
 
 	draw := func(t int) {
 
-		logWindow.Items = strs[t%9:]
-		averages.Lines[0].Data = spdata[:30+t%50]
-		averages.Lines[1].Data = spdata[:35+t%50]
-		requestsPerSecondLineChart.Data = sinps[2*t%220:]
-		requestsByStatusCode.Data = bcdata[t/2%10:]
-		ui.Render(logWindow, requestsByStatusCode, totalBytesDownloaded, totalNumberOfRequests, averages, requestsPerSecondLineChart)
+		snapshot := stats.LastSnapshot()
+
+		// capture the latest snapshot
+		snapshots = append(snapshots, snapshot)
+
+		// log messages
+		logWindow.Items = stats.LastLogMessages(20)
+
+		// total number of requests
+		totalNumberOfRequests.Text = fmt.Sprintf("%d", snapshot.TotalNumberOfRequests())
+
+		// total number of bytes downloaded
+		totalBytesDownloaded.Text = formatBytes(snapshot.TotalSizeInBytes())
+
+		// requests per second
+		requestsPerSecond.Text = fmt.Sprintf("%.1f", snapshot.RequestsPerSecond())
+
+		// average response time
+		averageResponseTime.Text = fmt.Sprintf("%s", snapshot.AverageResponseTime())
+
+		// number of workers
+		numberOfWorkers.Text = fmt.Sprintf("%d", snapshot.NumberOfWorkers())
+
+		// average request size
+		averageSizeInBytes.Text = formatBytes(snapshot.AverageSizeInBytes())
+
+		// number of errors
+		numberOfErrors.Text = fmt.Sprintf("%d", snapshot.NumberOfErrors())
+
+		// time since first snapshot
+		timeSinceStart := time.Now().Sub(startTime)
+		elapsedTime.Text = fmt.Sprintf("%s", timeSinceStart)
+
+		termui.Render(termui.Body)
 	}
-	ui.Handle("/sys/kbd/q", func(ui.Event) {
-		ui.StopLoop()
+
+	termui.Body.AddRows(
+		termui.NewRow(
+			termui.NewCol(12, 0, logWindow),
+		),
+		termui.NewRow(
+			termui.NewCol(3, 0, totalBytesDownloaded),
+			termui.NewCol(3, 0, totalNumberOfRequests),
+			termui.NewCol(3, 0, requestsPerSecond),
+			termui.NewCol(3, 0, averageResponseTime),
+		),
+		termui.NewRow(
+			termui.NewCol(3, 0, numberOfWorkers),
+			termui.NewCol(3, 0, numberOfErrors),
+			termui.NewCol(3, 0, averageSizeInBytes),
+			termui.NewCol(3, 0, elapsedTime),
+		),
+	)
+
+	termui.Body.Align()
+
+	termui.Render(termui.Body)
+
+	termui.Handle("/sys/wnd/resize", func(e termui.Event) {
+		termui.Body.Width = termui.TermWidth()
+		termui.Body.Align()
+		termui.Clear()
+		termui.Render(termui.Body)
 	})
-	ui.Handle("/timer/1s", func(e ui.Event) {
-		t := e.Data.(ui.EvtTimer)
+
+	termui.Handle("/sys/kbd/q", func(termui.Event) {
+		termui.StopLoop()
+	})
+
+	termui.Handle("/timer/1s", func(e termui.Event) {
+		t := e.Data.(termui.EvtTimer)
 		draw(int(t.Count))
 	})
-	ui.Loop()
+
+	termui.Loop()
+}
+
+func formatRequestsPerSecond(values []float64, numberOfValues int) []float64 {
+	if numberOfValues < 1 {
+		panic("Dumb value")
+	}
+
+	arraySize := len(values)
+
+	if numberOfValues == arraySize {
+		return values
+	}
+
+	if numberOfValues > arraySize {
+		difference := numberOfValues - arraySize
+		padding := make([]float64, difference)
+		return append(padding, values...)
+	}
+
+	if numberOfValues < arraySize {
+		startIndex := arraySize - numberOfValues
+		return values[startIndex:]
+	}
+
+	panic("Unreachable")
+}
+
+const (
+	BYTE     = 1.0
+	KILOBYTE = 1024 * BYTE
+	MEGABYTE = 1024 * KILOBYTE
+	GIGABYTE = 1024 * MEGABYTE
+	TERABYTE = 1024 * GIGABYTE
+)
+
+func formatBytes(numberOfBytes int) string {
+	unit := ""
+	value := float32(numberOfBytes)
+
+	switch {
+	case numberOfBytes >= TERABYTE:
+		unit = "T"
+		value = value / TERABYTE
+	case numberOfBytes >= GIGABYTE:
+		unit = "G"
+		value = value / GIGABYTE
+	case numberOfBytes >= MEGABYTE:
+		unit = "M"
+		value = value / MEGABYTE
+	case numberOfBytes >= KILOBYTE:
+		unit = "K"
+		value = value / KILOBYTE
+	case numberOfBytes >= BYTE:
+		unit = "B"
+	case numberOfBytes == 0:
+		return "0"
+	}
+
+	stringValue := fmt.Sprintf("%.1f", value)
+	stringValue = strings.TrimSuffix(stringValue, ".0")
+	return fmt.Sprintf("%s%s", stringValue, unit)
 }

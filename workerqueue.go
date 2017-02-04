@@ -13,7 +13,7 @@ type WorkResult struct {
 	url       url.URL
 
 	numberOfWorkers int
-	workerNumber    int
+	workerID        int
 
 	responseSize int
 	statusCode   int
@@ -23,11 +23,11 @@ type WorkResult struct {
 }
 
 func (workResult WorkResult) String() string {
-	return fmt.Sprintf("%03d %9s %15s  %s  %s",
+	return fmt.Sprintf("#%03d: %03d %9s %15s %20s",
+		workResult.workerID,
 		workResult.statusCode,
 		fmt.Sprintf("%d", workResult.responseSize),
 		fmt.Sprintf("%f ms", workResult.ResponseTime().Seconds()*1000),
-		workResult.parentURL.String(),
 		workResult.url.String(),
 	)
 }
@@ -68,8 +68,8 @@ func (workResult WorkResult) ContentType() string {
 	return workResult.contentType
 }
 
-func (workResult WorkResult) WorkerNumber() int {
-	return workResult.workerNumber
+func (workResult WorkResult) WorkerID() int {
+	return workResult.workerID
 }
 
 func (workResult WorkResult) NumberOfWorkers() int {
@@ -78,7 +78,7 @@ func (workResult WorkResult) NumberOfWorkers() int {
 
 type WorkRequest struct {
 	URL     url.URL
-	Execute func() WorkResult
+	Execute func(workerID, numberOfWorkers int) WorkResult
 }
 
 var WorkerQueue chan chan WorkRequest
@@ -86,15 +86,15 @@ var WorkerQueue chan chan WorkRequest
 // A buffered channel that we can send work requests on.
 var WorkQueue = make(chan WorkRequest, 100)
 
-func StartDispatcher(nworkers int) chan WorkResult {
+func StartDispatcher(numberOfWorkers int) chan WorkResult {
 
 	results := make(chan WorkResult, 10)
 
 	// First, initialize the channel we are going to but the workers' work channels into.
-	WorkerQueue = make(chan chan WorkRequest, nworkers)
+	WorkerQueue = make(chan chan WorkRequest, numberOfWorkers)
 
 	// Now, create all of our workers.
-	for i := 0; i < nworkers; i++ {
+	for i := 0; i < numberOfWorkers; i++ {
 		worker := NewWorker(i+1, WorkerQueue, results)
 		worker.Start()
 	}

@@ -96,7 +96,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions) error {
 
 				updateStatistics(result)
 
-			case _ = <-time.After(time.Second * 60):
+			case _ = <-time.After(options.Timeout):
 				if len(WorkQueue) == 0 && len(crawlRequestQueue) == 0 {
 					return
 				}
@@ -115,7 +115,7 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 
 	return WorkRequest{
 		URL: urlToCrawl.TargetURL,
-		Execute: func() WorkResult {
+		Execute: func(workerID, numberOfWorkers int) WorkResult {
 			defer producer_wg.Done()
 
 			// read the URL
@@ -148,6 +148,9 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 			return WorkResult{
 				parentURL: urlToCrawl.ParentURL,
 				url:       urlToCrawl.TargetURL,
+
+				workerID:        workerID,
+				numberOfWorkers: numberOfWorkers,
 
 				responseSize: response.Size(),
 				statusCode:   response.StatusCode(),
@@ -277,4 +280,5 @@ func getURLsFromSitemapIndex(xmlSitemapURL url.URL) ([]url.URL, error) {
 
 type CrawlOptions struct {
 	NumberOfParallelRequests int
+	Timeout                  time.Duration
 }

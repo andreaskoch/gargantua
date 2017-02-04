@@ -73,3 +73,23 @@ func readURL(url url.URL) (Response, error) {
 		contentType: contentType,
 	}, nil
 }
+
+func getShortenedURL(url url.URL, length int) string {
+	urlText := url.String()
+	urlLength := len(urlText)
+
+	if length < 0 {
+		panic("Invalid length given")
+	}
+
+	if length == 0 {
+		return ""
+	}
+
+	if length >= urlLength {
+		return urlText
+	}
+
+	startPosition := urlLength - length
+	return urlText[startPosition:]
+}

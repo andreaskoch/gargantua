@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func getTestSitemapXml(domain string) string {
@@ -43,5 +44,8 @@ func Test_crawl_validSitemap(t *testing.T) {
 	defer testSitemapServer.Close()
 
 	testServerURL, _ := url.Parse(testSitemapServer.URL)
-	crawl(*testServerURL, CrawlOptions{})
+	crawl(*testServerURL, CrawlOptions{
+		NumberOfParallelRequests: 10,
+		Timeout:                  time.Millisecond * 500,
+	})
 }

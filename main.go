@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 )
 
 const applicationName = "gargantua"
@@ -37,14 +38,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	dashboard()
-
 	done := make(chan bool)
 	go func() {
-		crawl(*targetURL, CrawlOptions{int(numberOfParallelRequests)})
+		crawl(*targetURL, CrawlOptions{
+			NumberOfParallelRequests: int(numberOfParallelRequests),
+			Timeout:                  time.Second * 60,
+		})
 		done <- true
 	}()
 
+	dashboard(time.Now())
 	<-done
 
 }

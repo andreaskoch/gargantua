@@ -36,7 +36,7 @@ func (w *Worker) Start() {
 
 			select {
 			case work := <-w.Work:
-				result := work.Execute()
+				result := work.Execute(w.ID, cap(WorkerQueue))
 				w.results <- result
 
 			case <-w.QuitChan:

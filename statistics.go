@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -19,13 +20,15 @@ func updateStatistics(workResult WorkResult) {
 	go stats.Add(workResult)
 }
 
-type SnapShot struct {
+type Snapshot struct {
 
 	// time
 	timestamp           time.Time
+	timeSinceStart      time.Duration
 	averageResponseTime time.Duration
 
 	// counters
+	numberOfWorkers              int
 	totalNumberOfRequests        int
 	numberOfSuccessfulRequests   int
 	numberOfUnsuccessfulRequests int
@@ -39,17 +42,51 @@ type SnapShot struct {
 	averageSizeInBytes int
 }
 
+func (snapshot Snapshot) Timestamp() time.Time {
+	return snapshot.timestamp
+}
+
+func (snapshot Snapshot) NumberOfWorkers() int {
+	return snapshot.numberOfWorkers
+}
+
+func (snapshot Snapshot) NumberOfErrors() int {
+	return snapshot.numberOfUnsuccessfulRequests
+}
+
+func (snapshot Snapshot) TotalNumberOfRequests() int {
+	return snapshot.totalNumberOfRequests
+}
+
+func (snapshot Snapshot) TotalSizeInBytes() int {
+	return snapshot.totalSizeInBytes
+}
+
+func (snapshot Snapshot) AverageSizeInBytes() int {
+	return snapshot.averageSizeInBytes
+}
+
+func (snapshot Snapshot) AverageResponseTime() time.Duration {
+	return snapshot.averageResponseTime
+}
+
+func (snapshot Snapshot) RequestsPerSecond() float64 {
+	return snapshot.numberOfRequestsPerSecond
+}
+
 type Statistics struct {
 	lock sync.RWMutex
 
-	rawResults []WorkResult
-	snapShots  []SnapShot
+	rawResults  []WorkResult
+	snapShots   []Snapshot
+	logMessages []string
 
 	startTime time.Time
 	endTime   time.Time
 
 	totalResponseTime time.Duration
 
+	numberOfWorkers               int
 	numberOfRequests              int
 	numberOfSuccessfulRequests    int
 	numberOfUnsuccessfulRequests  int
@@ -59,7 +96,7 @@ type Statistics struct {
 	totalSizeInBytes int
 }
 
-func (statistics *Statistics) Add(workResult WorkResult) SnapShot {
+func (statistics *Statistics) Add(workResult WorkResult) Snapshot {
 
 	// update the raw results
 	statistics.lock.Lock()
@@ -92,6 +129,9 @@ func (statistics *Statistics) Add(workResult WorkResult) SnapShot {
 		statistics.numberOfUnsuccessfulRequests += 1
 	}
 
+	// number of workers
+	statistics.numberOfWorkers = workResult.NumberOfWorkers()
+
 	// number of requests by status code
 	statistics.numberOfRequestsByStatusCode[workResult.StatusCode()] += 1
 
@@ -110,15 +150,19 @@ func (statistics *Statistics) Add(workResult WorkResult) SnapShot {
 	averageResponseTime := time.Duration(statistics.totalResponseTime.Nanoseconds() / int64(statistics.numberOfRequests))
 
 	// number of requests per second
-	requestsPerSecond := statistics.endTime.Sub(statistics.startTime).Seconds() / float64(statistics.numberOfRequests)
+	requestsPerSecond := float64(statistics.numberOfRequests) / statistics.endTime.Sub(statistics.startTime).Seconds()
+
+	// log messages
+	statistics.logMessages = append(statistics.logMessages, workResult.String())
 
 	// create a snapshot
-	snapShot := SnapShot{
+	snapShot := Snapshot{
 		// times
 		timestamp:           workResult.EndTime(),
 		averageResponseTime: averageResponseTime,
 
 		// counters
+		numberOfWorkers:               statistics.numberOfWorkers,
 		totalNumberOfRequests:         statistics.numberOfRequests,
 		numberOfSuccessfulRequests:    statistics.numberOfSuccessfulRequests,
 		numberOfUnsuccessfulRequests:  statistics.numberOfUnsuccessfulRequests,
@@ -134,4 +178,54 @@ func (statistics *Statistics) Add(workResult WorkResult) SnapShot {
 	statistics.snapShots = append(statistics.snapShots, snapShot)
 
 	return snapShot
+}
+
+func (statistics *Statistics) LastSnapshot() Snapshot {
+	statistics.lock.RLock()
+	defer statistics.lock.RUnlock()
+
+	lastSnapshotIndex := len(statistics.snapShots) - 1
+	if lastSnapshotIndex < 0 {
+		return Snapshot{}
+	}
+
+	return statistics.snapShots[lastSnapshotIndex]
+}
+
+func (statistics *Statistics) LastLogMessages(count int) []string {
+
+	statistics.lock.RLock()
+	defer statistics.lock.RUnlock()
+
+	messages, err := getLatestLogMessages(statistics.logMessages, count)
+	if err != nil {
+		panic(err)
+	}
+
+	return messages
+
+}
+
+func getLatestLogMessages(messages []string, count int) ([]string, error) {
+
+	if count < 0 {
+		return nil, fmt.Errorf("The count cannot be negative")
+	}
+
+	numberOfMessges := len(messages)
+
+	if count == numberOfMessges {
+		return messages, nil
+	}
+
+	if count < numberOfMessges {
+		return messages[numberOfMessges-count:], nil
+	}
+
+	if count > numberOfMessges {
+		fillLines := make([]string, count-numberOfMessges)
+		return append(fillLines, messages...), nil
+	}
+
+	panic("Unreachable")
 }
