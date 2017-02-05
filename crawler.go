@@ -149,6 +149,12 @@ func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {
 			href = strings.TrimSuffix(base, "/") + "/" + href
 		}
 
+		// cut off hashes
+		if strings.Contains(href, "#") {
+			hashPosition := strings.Index(href, "#")
+			href = href[0 : hashPosition-1]
+		}
+
 		hrefURL, err := url.Parse(href)
 		if err != nil {
 			return
