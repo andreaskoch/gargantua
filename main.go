@@ -44,13 +44,19 @@ func main() {
 	go func() {
 		result := crawl(*targetURL, CrawlOptions{
 			NumberOfConcurrentRequests: int(numberOfConcurrentRequests),
-			Timeout:                    time.Second * 60,
+			Timeout:                    time.Second * 10,
 		}, stopTheCrawler)
 
 		crawlResult <- result
 	}()
 
-	dashboard(time.Now(), stopTheCrawler)
+	interactiveUI := false
+
+	debugf = consoleDebug
+	if interactiveUI {
+		debugf = dashboardDebug
+		go dashboard(time.Now(), stopTheCrawler)
+	}
 
 	<-crawlResult
 
@@ -67,4 +73,27 @@ func usage(writer io.Writer) {
 	fmt.Fprintf(writer, "  %s 20 http://example.com/sitemap.org\n\n", applicationName)
 	fmt.Fprintf(writer, "\n")
 	fmt.Fprintf(writer, "🌈 https://github.com/andreaskoch/gargantua\n")
+}
+
+var errorMessages []string
+
+var debugf func(format string, a ...interface{})
+
+func init() {
+	debugf = func(format string, a ...interface{}) {
+		// default
+	}
+}
+
+func consoleDebug(format string, a ...interface{}) {
+	fmt.Println(fmt.Sprintf(format, a...))
+}
+
+func dashboardDebug(format string, a ...interface{}) {
+	latestMesasges, err := getLatestLogMessages(errorMessages, 4)
+	if err != nil {
+		panic(err)
+	}
+
+	errorMessages = append(latestMesasges, fmt.Sprintf(format, a...))
 }

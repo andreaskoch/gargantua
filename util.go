@@ -1,95 +1,42 @@
 package main
 
 import (
-	"io/ioutil"
-	"net/http"
-	"net/url"
+	"fmt"
 	"strings"
-	"time"
 )
 
-type Response struct {
-	body        []byte
-	statusCode  int
-	startTime   time.Time
-	endTime     time.Time
-	contentType string
-}
+const (
+	BYTE     = 1.0
+	KILOBYTE = 1024 * BYTE
+	MEGABYTE = 1024 * KILOBYTE
+	GIGABYTE = 1024 * MEGABYTE
+	TERABYTE = 1024 * GIGABYTE
+)
 
-func (response *Response) Body() []byte {
-	return response.body
-}
+func formatBytes(numberOfBytes int) string {
+	unit := ""
+	value := float32(numberOfBytes)
 
-func (response *Response) Size() int {
-	return len(response.body)
-}
-
-func (response *Response) StatusCode() int {
-	return response.statusCode
-}
-
-func (response *Response) StartTime() time.Time {
-	return response.startTime
-}
-
-func (response *Response) EndTime() time.Time {
-	return response.endTime
-}
-
-func (response *Response) ContentType() string {
-	return response.contentType
-}
-
-func (response *Response) IsHTML() bool {
-	return strings.HasPrefix(response.contentType, "text/html")
-}
-
-func readURL(url url.URL) (Response, error) {
-	startTime := time.Now().UTC()
-	resp, fetchErr := http.Get(url.String())
-	if fetchErr != nil {
-		return Response{}, fetchErr
+	switch {
+	case numberOfBytes >= TERABYTE:
+		unit = "T"
+		value = value / TERABYTE
+	case numberOfBytes >= GIGABYTE:
+		unit = "G"
+		value = value / GIGABYTE
+	case numberOfBytes >= MEGABYTE:
+		unit = "M"
+		value = value / MEGABYTE
+	case numberOfBytes >= KILOBYTE:
+		unit = "K"
+		value = value / KILOBYTE
+	case numberOfBytes >= BYTE:
+		unit = "B"
+	case numberOfBytes == 0:
+		return "0"
 	}
 
-	defer resp.Body.Close()
-	body, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return Response{}, readErr
-	}
-
-	endTime := time.Now().UTC()
-
-	// content type
-	contentType := resp.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = http.DetectContentType(body)
-	}
-
-	return Response{
-		body:        body,
-		statusCode:  resp.StatusCode,
-		startTime:   startTime,
-		endTime:     endTime,
-		contentType: contentType,
-	}, nil
-}
-
-func getShortenedURL(url url.URL, length int) string {
-	urlText := url.String()
-	urlLength := len(urlText)
-
-	if length < 0 {
-		panic("Invalid length given")
-	}
-
-	if length == 0 {
-		return ""
-	}
-
-	if length >= urlLength {
-		return urlText
-	}
-
-	startPosition := urlLength - length
-	return urlText[startPosition:]
+	stringValue := fmt.Sprintf("%.1f", value)
+	stringValue = strings.TrimSuffix(stringValue, ".0")
+	return fmt.Sprintf("%s%s", stringValue, unit)
 }

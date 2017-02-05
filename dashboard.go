@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gizak/termui"
@@ -70,6 +69,12 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	elapsedTime.BorderLabel = "Elapsed time"
 	elapsedTime.BorderFg = termui.ColorCyan
 
+	debugMessages := termui.NewList()
+	debugMessages.ItemFgColor = termui.ColorYellow
+	debugMessages.BorderLabel = "Debug"
+	debugMessages.Height = 6
+	debugMessages.Y = 0
+
 	draw := func() {
 
 		snapshot := stats.LastSnapshot()
@@ -101,6 +106,9 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 		// number of errors
 		numberOfErrors.Text = fmt.Sprintf("%d", snapshot.NumberOfErrors())
 
+		// debug messages
+		debugMessages.Items = errorMessages
+
 		// time since first snapshot
 		timeSinceStart := time.Now().Sub(startTime)
 		elapsedTime.Text = fmt.Sprintf("%s", timeSinceStart)
@@ -124,6 +132,9 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 			termui.NewCol(3, 0, averageSizeInBytes),
 			termui.NewCol(3, 0, elapsedTime),
 		),
+		termui.NewRow(
+			termui.NewCol(12, 0, debugMessages),
+		),
 	)
 
 	termui.Body.Align()
@@ -142,7 +153,6 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 		stopTheCrawler <- true
 
 		termui.StopLoop()
-		termui.Clear()
 	})
 
 	termui.Handle("/timer/1s", func(e termui.Event) {
@@ -150,65 +160,4 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	})
 
 	termui.Loop()
-}
-
-func formatRequestsPerSecond(values []float64, numberOfValues int) []float64 {
-	if numberOfValues < 1 {
-		panic("Dumb value")
-	}
-
-	arraySize := len(values)
-
-	if numberOfValues == arraySize {
-		return values
-	}
-
-	if numberOfValues > arraySize {
-		difference := numberOfValues - arraySize
-		padding := make([]float64, difference)
-		return append(padding, values...)
-	}
-
-	if numberOfValues < arraySize {
-		startIndex := arraySize - numberOfValues
-		return values[startIndex:]
-	}
-
-	panic("Unreachable")
-}
-
-const (
-	BYTE     = 1.0
-	KILOBYTE = 1024 * BYTE
-	MEGABYTE = 1024 * KILOBYTE
-	GIGABYTE = 1024 * MEGABYTE
-	TERABYTE = 1024 * GIGABYTE
-)
-
-func formatBytes(numberOfBytes int) string {
-	unit := ""
-	value := float32(numberOfBytes)
-
-	switch {
-	case numberOfBytes >= TERABYTE:
-		unit = "T"
-		value = value / TERABYTE
-	case numberOfBytes >= GIGABYTE:
-		unit = "G"
-		value = value / GIGABYTE
-	case numberOfBytes >= MEGABYTE:
-		unit = "M"
-		value = value / MEGABYTE
-	case numberOfBytes >= KILOBYTE:
-		unit = "K"
-		value = value / KILOBYTE
-	case numberOfBytes >= BYTE:
-		unit = "B"
-	case numberOfBytes == 0:
-		return "0"
-	}
-
-	stringValue := fmt.Sprintf("%.1f", value)
-	stringValue = strings.TrimSuffix(stringValue, ".0")
-	return fmt.Sprintf("%s%s", stringValue, unit)
 }
