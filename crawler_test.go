@@ -44,8 +44,10 @@ func Test_crawl_validSitemap(t *testing.T) {
 	defer testSitemapServer.Close()
 
 	testServerURL, _ := url.Parse(testSitemapServer.URL)
+
+	stopTheCrawler := make(chan bool)
 	crawl(*testServerURL, CrawlOptions{
-		NumberOfParallelRequests: 10,
+		NumberOfParallelRequests: 2,
 		Timeout:                  time.Millisecond * 500,
-	})
+	}, stopTheCrawler)
 }

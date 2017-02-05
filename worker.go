@@ -38,8 +38,9 @@ func (w *Worker) Start() {
 
 			case <-w.QuitChan:
 				// We have been asked to stop.
-				fmt.Printf("worker%d stopping\n", w.ID)
+				fmt.Printf("worker %d stopping\n", w.ID)
 				return
+
 			}
 		}
 	}()

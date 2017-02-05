@@ -39,18 +39,20 @@ func main() {
 	}
 
 	stopTheCrawler := make(chan bool)
-	crawlerIsDone := make(chan bool)
+	crawlResult := make(chan error)
 
 	go func() {
-		crawl(*targetURL, CrawlOptions{
+		result := crawl(*targetURL, CrawlOptions{
 			NumberOfParallelRequests: int(numberOfParallelRequests),
 			Timeout:                  time.Second * 60,
-		}, stopTheCrawler, crawlerIsDone)
+		}, stopTheCrawler)
+
+		crawlResult <- result
 	}()
 
 	dashboard(time.Now(), stopTheCrawler)
 
-	<-crawlerIsDone
+	<-crawlResult
 
 }
 

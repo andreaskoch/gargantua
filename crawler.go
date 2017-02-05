@@ -20,7 +20,7 @@ type URLCrawlRequest struct {
 	TargetURL url.URL
 }
 
-func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop, crawlerIsDone chan bool) error {
+func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 
 	// read the XML sitemap as a initial source for URLs
 	urlsFromXMLSitemap, err := getURLs(xmlSitemapURL)
@@ -40,54 +40,35 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop, crawlerIsDone chan
 	}
 
 	// crawl all URLs in the queue
-	var stopWorkers chan bool
-	done := StartDispatcher(options.NumberOfParallelRequests, stopWorkers)
+	allWorkersHaveStopped := StartDispatcher(options.NumberOfParallelRequests, stop)
 
 	go func() {
-
-		for {
-			select {
-			case <-stop:
-				fmt.Println("Receive the stop signal 1")
-				stopWorkers <- true
-
-			case <-done:
-				crawlerIsDone <- true
-				return
-
-			case urlCrawlRequest, ok := <-crawlRequestQueue:
-				{
-					if !ok {
-						return
-					}
-
-					// skip URLs we have already seen
-					urlLock.RLock()
-					_, alreadyVisited := visitedURLs[urlCrawlRequest.TargetURL.String()]
-					urlLock.RUnlock()
-
-					if alreadyVisited {
-						continue
-					}
-
-					// mark the URL as visited
-					urlLock.Lock()
-					visitedURLs[urlCrawlRequest.TargetURL.String()] = urlCrawlRequest.TargetURL
-					urlLock.Unlock()
-
-					go func() {
-						WorkQueue <- createWorkRequest(urlCrawlRequest, crawlRequestQueue)
-					}()
-
-				}
-
-			}
-
+		select {
+		case <-allWorkersHaveStopped:
+			close(crawlRequestQueue)
+			return
 		}
-
 	}()
 
-	crawlerIsDone <- true
+	for urlCrawlRequest := range crawlRequestQueue {
+
+		// skip URLs we have already seen
+		urlLock.RLock()
+		_, alreadyVisited := visitedURLs[urlCrawlRequest.TargetURL.String()]
+		urlLock.RUnlock()
+
+		if alreadyVisited {
+			continue
+		}
+
+		// mark the URL as visited
+		urlLock.Lock()
+		visitedURLs[urlCrawlRequest.TargetURL.String()] = urlCrawlRequest.TargetURL
+		urlLock.Unlock()
+
+		WorkQueue <- createWorkRequest(urlCrawlRequest, crawlRequestQueue)
+
+	}
 
 	return nil
 }
@@ -136,8 +117,6 @@ func createWorkRequest(urlToCrawl URLCrawlRequest, newUrls chan URLCrawlRequest)
 			}
 
 			updateStatistics(workResult)
-
-			return
 		}}
 
 }

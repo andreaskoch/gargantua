@@ -38,6 +38,7 @@ func StartDispatcher(numberOfWorkers int, stop chan bool) chan bool {
 			case <-stop:
 				fmt.Println("Receive the stop signal 2")
 				for _, worker := range workers {
+					fmt.Println("Stopping worker", worker.ID)
 					worker.Stop()
 				}
 
