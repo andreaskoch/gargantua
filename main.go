@@ -12,8 +12,8 @@ import (
 const applicationName = "gargantua"
 const applicationVersion = "v0.1.0-alpha"
 
-const minimumNumberOfParallelRequests = 1
-const maxiumumNumberOfParallelRequests = 1000
+const minimumNumberOfConcurrentRequests = 1
+const maxiumumNumberOfConcurrentRequests = 1000
 
 func main() {
 	if len(os.Args) < 3 {
@@ -21,14 +21,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	numberOfParallelRequests, err := strconv.ParseInt(os.Args[1], 10, 64)
+	numberOfConcurrentRequests, err := strconv.ParseInt(os.Args[1], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse %q as the number of parallel requests: %s", os.Args[1], err)
+		fmt.Fprintf(os.Stderr, "Failed to parse %q as the number of concurrent requests: %s", os.Args[1], err)
 		os.Exit(1)
 	}
 
-	if numberOfParallelRequests < minimumNumberOfParallelRequests || numberOfParallelRequests > maxiumumNumberOfParallelRequests {
-		fmt.Fprintf(os.Stderr, "The number of parallel requests must be between %d amd %d", minimumNumberOfParallelRequests, maxiumumNumberOfParallelRequests)
+	if numberOfConcurrentRequests < minimumNumberOfConcurrentRequests || numberOfConcurrentRequests > maxiumumNumberOfConcurrentRequests {
+		fmt.Fprintf(os.Stderr, "The number of concurrent requests must be between %d amd %d", minimumNumberOfConcurrentRequests, maxiumumNumberOfConcurrentRequests)
 		os.Exit(1)
 	}
 
@@ -43,8 +43,8 @@ func main() {
 
 	go func() {
 		result := crawl(*targetURL, CrawlOptions{
-			NumberOfParallelRequests: int(numberOfParallelRequests),
-			Timeout:                  time.Second * 60,
+			NumberOfConcurrentRequests: int(numberOfConcurrentRequests),
+			Timeout:                    time.Second * 60,
 		}, stopTheCrawler)
 
 		crawlResult <- result
@@ -61,7 +61,7 @@ func usage(writer io.Writer) {
 	fmt.Fprintf(writer, "\n")
 	fmt.Fprintf(writer, "%s\n\n", applicationVersion)
 	fmt.Fprintf(writer, "Usage:\n\n")
-	fmt.Fprintf(writer, "  %s <number-of-parallel-requests> <sitemap-url>\n\n", applicationName)
+	fmt.Fprintf(writer, "  %s <number-of-concurrent-requests> <sitemap-url>\n\n", applicationName)
 	fmt.Fprintf(writer, "\n")
 	fmt.Fprintf(writer, "Example:\n\n")
 	fmt.Fprintf(writer, "  %s 20 http://example.com/sitemap.org\n\n", applicationName)

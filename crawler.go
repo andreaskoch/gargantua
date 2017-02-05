@@ -40,7 +40,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 	}
 
 	// crawl all URLs in the queue
-	allWorkersHaveStopped := StartDispatcher(options.NumberOfParallelRequests, stop)
+	allWorkersHaveStopped := StartDispatcher(options.NumberOfConcurrentRequests, stop)
 
 	go func() {
 		select {
@@ -238,6 +238,6 @@ func getURLsFromSitemapIndex(xmlSitemapURL url.URL) ([]url.URL, error) {
 }
 
 type CrawlOptions struct {
-	NumberOfParallelRequests int
-	Timeout                  time.Duration
+	NumberOfConcurrentRequests int
+	Timeout                    time.Duration
 }
