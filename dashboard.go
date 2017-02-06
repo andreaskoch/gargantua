@@ -149,7 +149,6 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	})
 
 	termui.Handle("/sys/kbd/q", func(termui.Event) {
-		fmt.Println("Send the stop signal")
 		stopTheCrawler <- true
 
 		termui.StopLoop()

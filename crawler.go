@@ -64,6 +64,13 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 					workers <- workerID
 				}()
 
+			case <-time.After(time.Second * 1):
+
+				if len(workers) == cap(workers) && len(crawlRequestQueue) == 0 {
+					allURLsHaveBeenVisited <- true
+					return
+				}
+
 			}
 		}
 	}()
