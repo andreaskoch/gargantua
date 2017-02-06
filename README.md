@@ -10,6 +10,11 @@ Crawl **www.sitemaps.org** with 5 concurrent workers:
 gargantua crawl --url https://www.sitemaps.org/sitemap.xml --workers 5
 ```
 
+## Roadmap
+
+- Increase the number of workers at runtime
+- Clear the terminal windows after exiting gargantua (see: http://stackoverflow.com/questions/22891644/how-can-i-clear-the-terminal-screen-in-go)
+
 ## Troubleshooting
 
 ### My console is messed up after gargantua exits
