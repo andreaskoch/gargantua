@@ -19,11 +19,11 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 	}
 
 	// the URL queue
-	crawlRequestQueue := make(chan url.URL, len(urlsFromXMLSitemap))
+	urls := make(chan url.URL, len(urlsFromXMLSitemap))
 
 	// fill the URL queue with the URLs from the XML sitemap
 	for _, xmlSitemapURLEntry := range urlsFromXMLSitemap {
-		crawlRequestQueue <- xmlSitemapURLEntry
+		urls <- xmlSitemapURLEntry
 	}
 
 	results := make(chan WorkResult)
@@ -43,7 +43,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 				allURLsHaveBeenVisited <- true
 				return
 
-			case targetURL := <-crawlRequestQueue:
+			case targetURL := <-urls:
 				// skip URLs we have already seen
 				_, alreadyVisited := visitedURLs[targetURL.String()]
 
@@ -59,14 +59,14 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 				go func() {
 					workerID := <-workers
 					debugf("Using worker %d for URL %q", workerID, targetURL.String())
-					results <- executeWork(workerID, numberOfWorkers, targetURL, crawlRequestQueue)
+					results <- executeWork(workerID, numberOfWorkers, targetURL, urls)
 					debugf("Worker %d finished processing URL %q", workerID, targetURL.String())
 					workers <- workerID
 				}()
 
 			case <-time.After(time.Second * 1):
 
-				if len(workers) == cap(workers) && len(crawlRequestQueue) == 0 {
+				if len(workers) == cap(workers) && len(urls) == 0 {
 					allURLsHaveBeenVisited <- true
 					return
 				}

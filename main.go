@@ -2,98 +2,87 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
+
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const applicationName = "gargantua"
 const applicationVersion = "v0.1.0-alpha"
 
-const minimumNumberOfConcurrentRequests = 1
-const maxiumumNumberOfConcurrentRequests = 1000
+var (
+	app = kingpin.New(applicationName, fmt.Sprintf(`「 %s 」%s crawls all URLs of your website - starting with the links in your sitemap.xml
+
+    🌈 https://github.com/andreaskoch/gargantua
+`, applicationName, applicationVersion))
+
+	// global
+	verbose = app.Flag("verbose", "Disable the UI and enable debug mode").Envar("GARGANTUA_VERBOSE").Short('v').Default("false").Bool()
+	timeout = app.Flag("timeout", "The HTTP timeout in seconds used by the crawler").Envar("GARGANTUA_TIMEOUT").Short('t').Default("60").Int()
+
+	// crawl
+	crawlCommand    = app.Command("crawl", "Crawls a given websites' XML sitemap")
+	crawlWebsiteURL = crawlCommand.Flag("url", "The URL to a websites' XML sitemap (e.g. https://www.sitemaps.org/sitemap.xml)").Required().Envar("GARGANTUA_URL").Short('u').String()
+	crawlWorkers    = crawlCommand.Flag("workers", "The number of concurrent workers that crawl the site at the same time").Required().Envar("GARGANTUA_WORKERS").Short('w').Int()
+)
+
+func init() {
+	app.Version(applicationVersion)
+	app.Author("Andreas Koch <andy@ak7.io>")
+}
 
 func main() {
-	if len(os.Args) < 3 {
-		usage(os.Stderr)
-		os.Exit(1)
+	handleCommandlineArgument(os.Args[1:])
+}
+
+func handleCommandlineArgument(arguments []string) {
+
+	switch kingpin.MustParse(app.Parse(arguments)) {
+
+	case crawlCommand.FullCommand():
+		websiteURL, parseError := url.Parse(*crawlWebsiteURL)
+		if parseError != nil {
+			fmt.Fprintf(os.Stderr, "%s", parseError.Error())
+			os.Exit(1)
+		}
+
+		err := startCrawling(*websiteURL, *crawlWorkers, *timeout, *verbose)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err)
+			os.Exit(1)
+		}
+
+		os.Exit(0)
 	}
 
-	numberOfConcurrentRequests, err := strconv.ParseInt(os.Args[1], 10, 64)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse %q as the number of concurrent requests: %s", os.Args[1], err)
-		os.Exit(1)
-	}
+}
 
-	if numberOfConcurrentRequests < minimumNumberOfConcurrentRequests || numberOfConcurrentRequests > maxiumumNumberOfConcurrentRequests {
-		fmt.Fprintf(os.Stderr, "The number of concurrent requests must be between %d amd %d", minimumNumberOfConcurrentRequests, maxiumumNumberOfConcurrentRequests)
-		os.Exit(1)
-	}
-
-	targetURL, err := url.Parse(os.Args[2])
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse %q as the XML sitemap URL: %s", os.Args[2], err)
-		os.Exit(1)
-	}
-
+func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, debugModeIsEnabled bool) error {
 	stopTheCrawler := make(chan bool)
 	crawlResult := make(chan error)
 
 	go func() {
-		result := crawl(*targetURL, CrawlOptions{
-			NumberOfConcurrentRequests: int(numberOfConcurrentRequests),
-			Timeout:                    time.Second * 10,
+		result := crawl(targetURL, CrawlOptions{
+			NumberOfConcurrentRequests: int(concurrentRequests),
+			Timeout:                    time.Second * time.Duration(timeoutInSeconds),
 		}, stopTheCrawler)
 
 		crawlResult <- result
 	}()
 
-	interactiveUI := false
-
-	debugf = consoleDebug
-	if interactiveUI {
+	if debugModeIsEnabled {
+		debugf = consoleDebug
+	} else {
 		debugf = dashboardDebug
 		go dashboard(time.Now(), stopTheCrawler)
 	}
 
-	<-crawlResult
-
-}
-
-func usage(writer io.Writer) {
-	fmt.Fprintf(writer, "「 %s 」crawls all URLs of your website - starting with the links in your sitemap.xml\n", applicationName)
-	fmt.Fprintf(writer, "\n")
-	fmt.Fprintf(writer, "%s\n\n", applicationVersion)
-	fmt.Fprintf(writer, "Usage:\n\n")
-	fmt.Fprintf(writer, "  %s <number-of-concurrent-requests> <sitemap-url>\n\n", applicationName)
-	fmt.Fprintf(writer, "\n")
-	fmt.Fprintf(writer, "Example:\n\n")
-	fmt.Fprintf(writer, "  %s 20 http://example.com/sitemap.org\n\n", applicationName)
-	fmt.Fprintf(writer, "\n")
-	fmt.Fprintf(writer, "🌈 https://github.com/andreaskoch/gargantua\n")
-}
-
-var errorMessages []string
-
-var debugf func(format string, a ...interface{})
-
-func init() {
-	debugf = func(format string, a ...interface{}) {
-		// default
-	}
-}
-
-func consoleDebug(format string, a ...interface{}) {
-	fmt.Println(fmt.Sprintf(format, a...))
-}
-
-func dashboardDebug(format string, a ...interface{}) {
-	latestMesasges, err := getLatestLogMessages(errorMessages, 4)
+	err := <-crawlResult
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	errorMessages = append(latestMesasges, fmt.Sprintf(format, a...))
+	return nil
 }
