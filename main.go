@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -72,12 +73,20 @@ func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, 
 		crawlResult <- result
 	}()
 
+	var uiWaitGroup = &sync.WaitGroup{}
 	if debugModeIsEnabled {
 		debugf = consoleDebug
 	} else {
 		debugf = dashboardDebug
-		go dashboard(time.Now(), stopTheCrawler)
+
+		uiWaitGroup.Add(1)
+		go func() {
+			dashboard(time.Now(), stopTheCrawler)
+			uiWaitGroup.Done()
+		}()
 	}
+
+	uiWaitGroup.Wait()
 
 	err := <-crawlResult
 	if err != nil {
