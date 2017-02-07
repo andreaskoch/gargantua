@@ -59,7 +59,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 				go func() {
 					workerID := <-workers
 					debugf("Using worker %d for URL %q", workerID, targetURL.String())
-					results <- executeWork(workerID, numberOfWorkers, targetURL, urls)
+					results <- executeWork(workerID, cap(workers), targetURL, urls)
 					debugf("Worker %d finished processing URL %q", workerID, targetURL.String())
 					workers <- workerID
 				}()

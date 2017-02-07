@@ -10,8 +10,6 @@ type WorkRequest struct {
 	Execute func(workerID, numberOfWorkers int) WorkResult
 }
 
-var numberOfWorkers int
-
 func executeWork(workerID, numberOfWorkers int, targetURL url.URL, newURLs chan url.URL) WorkResult {
 
 	// read the URL
