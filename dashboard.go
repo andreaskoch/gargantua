@@ -54,7 +54,7 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	averageSizeInBytes := termui.NewPar("")
 	averageSizeInBytes.Height = 3
 	averageSizeInBytes.TextFgColor = termui.ColorWhite
-	averageSizeInBytes.BorderLabel = "Average request size"
+	averageSizeInBytes.BorderLabel = "Average response size"
 	averageSizeInBytes.BorderFg = termui.ColorCyan
 
 	numberOfErrors := termui.NewPar("")
