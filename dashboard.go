@@ -70,7 +70,7 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	elapsedTime.BorderFg = termui.ColorCyan
 
 	debugMessages := termui.NewList()
-	debugMessages.ItemFgColor = termui.ColorYellow
+	debugMessages.ItemFgColor = termui.ColorWhite
 	debugMessages.BorderLabel = "Debug"
 	debugMessages.Height = 6
 	debugMessages.Y = 0
