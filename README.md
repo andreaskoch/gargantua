@@ -15,6 +15,10 @@ gargantua crawl --url https://www.sitemaps.org/sitemap.xml --workers 5
 - Increase the number of workers at runtime
 - Clear the terminal windows after exiting gargantua (see: http://stackoverflow.com/questions/22891644/how-can-i-clear-the-terminal-screen-in-go)
 - Personalized user agent string
+- Silent mode (only show statistics at the end)
+- CSV mode (print CSV output to stdout)
+- Dockerfile
+- Web-UI
 
 ## Troubleshooting
 
