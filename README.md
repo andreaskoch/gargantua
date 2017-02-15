@@ -23,6 +23,8 @@ Crawl **www.sitemaps.org** with 5 concurrent workers:
 gargantua crawl --url https://www.sitemaps.org/sitemap.xml --workers 5
 ```
 
+see also: [A short introduction video of gargantua on YouTube](https://www.youtube.com/watch?v=TSCMvUvc0qo)
+
 ## Download
 
 You can download binaries for Linux, macOS and Windows from [github.com »andreaskoch » gargantua » releases](https://github.com/andreaskoch/gargantua/releases):
