@@ -9,7 +9,7 @@ You can use「 gargantua 」to quickly and easily
 - **measure** response times
 - **detect** broken links
 
-from your command line on Linux, MacOS and Windows.
+from your command line on Linux, macOS and Windows.
 
 ![Animation: gargantua v0.1.0 crawling a website](files/gargantua-in-action-crawling-a-website.gif)
 
@@ -21,6 +21,14 @@ Crawl **www.sitemaps.org** with 5 concurrent workers:
 
 ```bash
 gargantua crawl --url https://www.sitemaps.org/sitemap.xml --workers 5
+```
+
+## Download
+
+You can download binaries for Linux, macOS and Windows from [github.com »andreaskoch » gargantua » releases](https://github.com/andreaskoch/gargantua/releases):
+
+```bash
+wget https://github.com/andreaskoch/gargantua/releases/download/v0.1.0-alpha/gargantua_linux_amd64
 ```
 
 ## Roadmap
