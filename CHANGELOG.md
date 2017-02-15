@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Remove the TERABYTE constant from the byte formatter so cross-compilation for ARM works
 - Remove the `reset` command hint from the troubleshooting section of the README
 
+### Removed
+- Remove the debug console from the command-line ui
+
 ## [v0.1.0-alpha] - 2017-02-07
 
 The Prototype

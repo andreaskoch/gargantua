@@ -69,12 +69,6 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	elapsedTime.BorderLabel = "Elapsed time"
 	elapsedTime.BorderFg = termui.ColorCyan
 
-	debugMessages := termui.NewList()
-	debugMessages.ItemFgColor = termui.ColorWhite
-	debugMessages.BorderLabel = "Debug"
-	debugMessages.Height = 6
-	debugMessages.Y = 0
-
 	draw := func() {
 
 		snapshot := stats.LastSnapshot()
@@ -106,9 +100,6 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 		// number of errors
 		numberOfErrors.Text = fmt.Sprintf("%d", snapshot.NumberOfErrors())
 
-		// debug messages
-		debugMessages.Items = errorMessages
-
 		// time since first snapshot
 		timeSinceStart := time.Now().Sub(startTime)
 		elapsedTime.Text = fmt.Sprintf("%s", timeSinceStart)
@@ -131,9 +122,6 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 			termui.NewCol(3, 0, numberOfErrors),
 			termui.NewCol(3, 0, averageSizeInBytes),
 			termui.NewCol(3, 0, elapsedTime),
-		),
-		termui.NewRow(
-			termui.NewCol(12, 0, debugMessages),
 		),
 	)
 
