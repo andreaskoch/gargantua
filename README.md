@@ -31,13 +31,28 @@ You can download binaries for Linux, macOS and Windows from [github.com »andrea
 wget https://github.com/andreaskoch/gargantua/releases/download/v0.1.0-alpha/gargantua_linux_amd64
 ```
 
+## Docker Image
+
+There is also a docker image that you can use to download or run the latest version of gargantua:
+
+[andreaskoch/gargantua](https://hub.docker.com/r/andreaskoch/gargantua/)
+
+```bash
+docker run --rm andreaskoch/gargantua:latest \
+       crawl \
+       --verbose \
+       --url https://www.sitemaps.org/sitemap.xml \
+       --workers 5
+```
+
+**Note**: You will need the `--verbose` flag in order to prevent the command-line UI from loading. Otherwise gargantua will fail.
+
 ## Roadmap
 
 - Increase the number of workers at runtime
 - Personalized user agent string
 - Silent mode (only show statistics at the end)
 - CSV mode (print CSV output to stdout)
-- Dockerfile
 - Web-UI
 
 ## License
