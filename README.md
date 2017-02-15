@@ -2,6 +2,19 @@
 
 The fast website crawler
 
+You can use「 gargantua 」to quickly and easily
+
+- **warm-up** your frontend caches
+- perform small **load-tests** against your publicly available pages
+- **measure** response times
+- **detect** broken links
+
+from your command line on Linux, MacOS and Windows.
+
+![Animation: gargantua v0.1.0 crawling a website](files/gargantua-in-action-crawling-a-website.gif)
+
+> Note: Press `Q` to stop the current crawling process.
+
 ## Usage
 
 Crawl **www.sitemaps.org** with 5 concurrent workers:
