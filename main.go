@@ -11,7 +11,7 @@ import (
 )
 
 const applicationName = "gargantua"
-const applicationVersion = "v0.1.0-alpha"
+const applicationVersion = "v0.2.0-alpha"
 
 var (
 	app = kingpin.New(applicationName, fmt.Sprintf(`「 %s 」%s crawls all URLs of your website - starting with the links in your sitemap.xml

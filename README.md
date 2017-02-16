@@ -30,7 +30,7 @@ see also: [A short introduction video of gargantua on YouTube](https://www.youtu
 You can download binaries for Linux, macOS and Windows from [github.com »andreaskoch » gargantua » releases](https://github.com/andreaskoch/gargantua/releases):
 
 ```bash
-wget https://github.com/andreaskoch/gargantua/releases/download/v0.1.0-alpha/gargantua_linux_amd64
+wget https://github.com/andreaskoch/gargantua/releases/download/v0.2.0-alpha/gargantua_linux_amd64
 ```
 
 ## Docker Image
