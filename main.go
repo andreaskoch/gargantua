@@ -62,6 +62,7 @@ func handleCommandlineArgument(arguments []string) {
 
 func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, debugModeIsEnabled bool) error {
 	stopTheCrawler := make(chan bool)
+	stopTheUI := make(chan bool)
 	crawlResult := make(chan error)
 
 	go func() {
@@ -70,6 +71,7 @@ func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, 
 			Timeout:                    time.Second * time.Duration(timeoutInSeconds),
 		}, stopTheCrawler)
 
+		stopTheUI <- true
 		crawlResult <- result
 	}()
 
@@ -81,7 +83,7 @@ func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, 
 
 		uiWaitGroup.Add(1)
 		go func() {
-			dashboard(time.Now(), stopTheCrawler)
+			dashboard(stopTheUI, stopTheCrawler)
 			uiWaitGroup.Done()
 		}()
 	}
