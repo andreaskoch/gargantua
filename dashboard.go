@@ -7,7 +7,7 @@ import (
 	"github.com/gizak/termui"
 )
 
-func dashboard(startTime time.Time, stopTheCrawler chan bool) {
+func dashboard(stopTheUI, stopTheCrawler chan bool) {
 	if err := termui.Init(); err != nil {
 		panic(err)
 	}
@@ -69,15 +69,22 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	elapsedTime.BorderLabel = "Elapsed time"
 	elapsedTime.BorderFg = termui.ColorCyan
 
-	debugMessages := termui.NewList()
-	debugMessages.ItemFgColor = termui.ColorWhite
-	debugMessages.BorderLabel = "Debug"
-	debugMessages.Height = 6
-	debugMessages.Y = 0
-
 	draw := func() {
 
 		snapshot := stats.LastSnapshot()
+
+		// ignore empty updates
+		if snapshot.Timestamp().IsZero() {
+			return
+		}
+
+		// don't update if there is no new snapshot available
+		if len(snapshots) > 0 {
+			previousSnapShot := snapshots[len(snapshots)-1]
+			if snapshot.Timestamp() == previousSnapShot.Timestamp() {
+				return
+			}
+		}
 
 		// capture the latest snapshot
 		snapshots = append(snapshots, snapshot)
@@ -106,11 +113,8 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 		// number of errors
 		numberOfErrors.Text = fmt.Sprintf("%d", snapshot.NumberOfErrors())
 
-		// debug messages
-		debugMessages.Items = errorMessages
-
 		// time since first snapshot
-		timeSinceStart := time.Now().Sub(startTime)
+		timeSinceStart := time.Now().Sub(snapshots[0].Timestamp())
 		elapsedTime.Text = fmt.Sprintf("%s", timeSinceStart)
 
 		termui.Render(termui.Body)
@@ -131,9 +135,6 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 			termui.NewCol(3, 0, numberOfErrors),
 			termui.NewCol(3, 0, averageSizeInBytes),
 			termui.NewCol(3, 0, elapsedTime),
-		),
-		termui.NewRow(
-			termui.NewCol(12, 0, debugMessages),
 		),
 	)
 
@@ -157,6 +158,16 @@ func dashboard(startTime time.Time, stopTheCrawler chan bool) {
 	termui.Handle("/timer/1s", func(e termui.Event) {
 		draw()
 	})
+
+	// stop when the crawler is done
+	go func() {
+		select {
+		case <-stopTheUI:
+			// wait 10 seconds before closing the ui
+			time.Sleep(time.Second * 10)
+			termui.StopLoop()
+		}
+	}()
 
 	termui.Loop()
 }

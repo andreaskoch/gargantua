@@ -11,7 +11,7 @@ import (
 )
 
 const applicationName = "gargantua"
-const applicationVersion = "v0.1.0-alpha"
+const applicationVersion = "v0.2.0-alpha"
 
 var (
 	app = kingpin.New(applicationName, fmt.Sprintf(`「 %s 」%s crawls all URLs of your website - starting with the links in your sitemap.xml
@@ -62,6 +62,7 @@ func handleCommandlineArgument(arguments []string) {
 
 func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, debugModeIsEnabled bool) error {
 	stopTheCrawler := make(chan bool)
+	stopTheUI := make(chan bool)
 	crawlResult := make(chan error)
 
 	go func() {
@@ -70,6 +71,7 @@ func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, 
 			Timeout:                    time.Second * time.Duration(timeoutInSeconds),
 		}, stopTheCrawler)
 
+		stopTheUI <- true
 		crawlResult <- result
 	}()
 
@@ -81,7 +83,7 @@ func startCrawling(targetURL url.URL, concurrentRequests, timeoutInSeconds int, 
 
 		uiWaitGroup.Add(1)
 		go func() {
-			dashboard(time.Now(), stopTheCrawler)
+			dashboard(stopTheUI, stopTheCrawler)
 			uiWaitGroup.Done()
 		}()
 	}

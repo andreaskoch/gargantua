@@ -10,7 +10,6 @@ const (
 	KILOBYTE = 1024 * BYTE
 	MEGABYTE = 1024 * KILOBYTE
 	GIGABYTE = 1024 * MEGABYTE
-	TERABYTE = 1024 * GIGABYTE
 )
 
 func formatBytes(numberOfBytes int) string {
@@ -18,9 +17,6 @@ func formatBytes(numberOfBytes int) string {
 	value := float32(numberOfBytes)
 
 	switch {
-	case numberOfBytes >= TERABYTE:
-		unit = "T"
-		value = value / TERABYTE
 	case numberOfBytes >= GIGABYTE:
 		unit = "G"
 		value = value / GIGABYTE
