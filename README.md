@@ -56,6 +56,7 @@ docker run --rm andreaskoch/gargantua:latest \
 - Silent mode (only show statistics at the end)
 - CSV mode (print CSV output to stdout)
 - Web-UI
+- Save downloaded data to disk
 
 ## License
 

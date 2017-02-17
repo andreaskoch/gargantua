@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Add "Save downloaded data to disk" to the roadmap (feature request #1)
+
 ## [v0.2.0-alpha] - 2017-02-07
 
 ### Fixed
