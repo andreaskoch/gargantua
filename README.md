@@ -25,12 +25,20 @@ gargantua crawl --url https://www.sitemaps.org/sitemap.xml --workers 5
 
 see also: [A short introduction video of gargantua on YouTube](https://www.youtube.com/watch?v=TSCMvUvc0qo)
 
+### Customize the user-agent
+
+You can specify a customized user agent using the `--user-agent` argument:
+
+```bash
+gargantua crawl --url https://www.sitemaps.org/sitemap.xml --workers 5 --user-agent "gargantua bot / iPhone"
+```
+
 ## Download
 
 You can download binaries for Linux, macOS and Windows from [github.com »andreaskoch » gargantua » releases](https://github.com/andreaskoch/gargantua/releases):
 
 ```bash
-wget https://github.com/andreaskoch/gargantua/releases/download/v0.2.0-alpha/gargantua_linux_amd64
+wget https://github.com/andreaskoch/gargantua/releases/download/v0.3.0-alpha/gargantua_linux_amd64
 ```
 
 ## Docker Image
@@ -52,7 +60,6 @@ docker run --rm andreaskoch/gargantua:latest \
 ## Roadmap
 
 - Increase the number of workers at runtime
-- Personalized user agent string
 - Silent mode (only show statistics at the end)
 - CSV mode (print CSV output to stdout)
 - Web-UI

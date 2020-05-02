@@ -48,9 +48,18 @@ func (response *Response) IsHTML() bool {
 	return strings.HasPrefix(response.contentType, "text/html")
 }
 
-func readURL(url url.URL) (Response, error) {
+func readURL(url url.URL, userAgent string) (Response, error) {
 	startTime := time.Now().UTC()
-	resp, fetchErr := http.Get(url.String())
+
+	req, requestErr := http.NewRequest("GET", url.String(), nil)
+	if requestErr != nil {
+		return Response{}, requestErr
+	}
+
+	req.Header.Set("User-Agent", userAgent)
+
+	client := &http.Client{}
+	resp, fetchErr := client.Do(req)
 	if fetchErr != nil {
 		return Response{}, fetchErr
 	}
@@ -78,16 +87,16 @@ func readURL(url url.URL) (Response, error) {
 	}, nil
 }
 
-func getURLs(xmlSitemapURL url.URL) ([]url.URL, error) {
+func getURLs(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
 
 	var urls []url.URL
 
-	urlsFromIndex, indexError := getURLsFromSitemapIndex(xmlSitemapURL)
+	urlsFromIndex, indexError := getURLsFromSitemapIndex(xmlSitemapURL, userAgent)
 	if indexError == nil {
 		urls = urlsFromIndex
 	}
 
-	urlsFromSitemap, sitemapError := getURLsFromSitemap(xmlSitemapURL)
+	urlsFromSitemap, sitemapError := getURLsFromSitemap(xmlSitemapURL, userAgent)
 	if sitemapError == nil {
 		urls = append(urls, urlsFromSitemap...)
 	}
@@ -100,11 +109,11 @@ func getURLs(xmlSitemapURL url.URL) ([]url.URL, error) {
 
 }
 
-func getURLsFromSitemap(xmlSitemapURL url.URL) ([]url.URL, error) {
+func getURLsFromSitemap(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
 
 	var urls []url.URL
 
-	sitemap, xmlSitemapError := getXMLSitemap(xmlSitemapURL)
+	sitemap, xmlSitemapError := getXMLSitemap(xmlSitemapURL, userAgent)
 	if xmlSitemapError != nil {
 		return nil, xmlSitemapError
 	}
@@ -122,11 +131,11 @@ func getURLsFromSitemap(xmlSitemapURL url.URL) ([]url.URL, error) {
 	return urls, nil
 }
 
-func getURLsFromSitemapIndex(xmlSitemapURL url.URL) ([]url.URL, error) {
+func getURLsFromSitemapIndex(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
 
 	var urls []url.URL
 
-	sitemapIndex, sitemapIndexError := getSitemapIndex(xmlSitemapURL)
+	sitemapIndex, sitemapIndexError := getSitemapIndex(xmlSitemapURL, userAgent)
 	if sitemapIndexError != nil {
 		return nil, sitemapIndexError
 	}
@@ -138,7 +147,7 @@ func getURLsFromSitemapIndex(xmlSitemapURL url.URL) ([]url.URL, error) {
 			return nil, err
 		}
 
-		sitemapUrls, err := getURLsFromSitemap(*locationURL)
+		sitemapUrls, err := getURLsFromSitemap(*locationURL, userAgent)
 		if err != nil {
 			return nil, err
 		}

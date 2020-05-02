@@ -18,7 +18,7 @@ func Test_getXMLSitemap_InvalidContent_ErrorIsReturned(t *testing.T) {
 	defer testSitemapServer.Close()
 
 	testServerURL, _ := url.Parse(testSitemapServer.URL)
-	_, err := getXMLSitemap(*testServerURL)
+	_, err := getXMLSitemap(*testServerURL, "gargantua bot")
 
 	if err == nil {
 		t.Fail()
@@ -37,7 +37,7 @@ func Test_getXMLSitemap_SitemapExists_SitemapIsReturned(t *testing.T) {
 	defer testSitemapServer.Close()
 
 	testServerURL, _ := url.Parse(testSitemapServer.URL)
-	sitemap, err := getXMLSitemap(*testServerURL)
+	sitemap, err := getXMLSitemap(*testServerURL,"gargantua bot")
 
 	if err != nil {
 		t.Fail()
