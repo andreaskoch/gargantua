@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-func getXMLSitemap(xmlSitemapURL url.URL) (XMLSitemap, error) {
+func getXMLSitemap(xmlSitemapURL url.URL, userAgent string) (XMLSitemap, error) {
 
-	response, readErr := readURL(xmlSitemapURL)
+	response, readErr := readURL(xmlSitemapURL, userAgent)
 	if readErr != nil {
 		return XMLSitemap{}, readErr
 	}

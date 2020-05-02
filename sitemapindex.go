@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func getSitemapIndex(xmlSitemapURL url.URL) (SitemapIndex, error) {
-	response, readErr := readURL(xmlSitemapURL)
+func getSitemapIndex(xmlSitemapURL url.URL, userAgent string) (SitemapIndex, error) {
+	response, readErr := readURL(xmlSitemapURL, userAgent)
 	if readErr != nil {
 		return SitemapIndex{}, readErr
 	}

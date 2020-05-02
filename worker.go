@@ -10,10 +10,10 @@ type WorkRequest struct {
 	Execute func(workerID, numberOfWorkers int) WorkResult
 }
 
-func executeWork(workerID, numberOfWorkers int, targetURL url.URL, newURLs chan url.URL) WorkResult {
+func executeWork(workerID, numberOfWorkers int, targetURL url.URL, userAgent string, newURLs chan url.URL) WorkResult {
 
 	// read the URL
-	response, err := readURL(targetURL)
+	response, err := readURL(targetURL, userAgent)
 	if err != nil {
 		return WorkResult{err: err}
 	}

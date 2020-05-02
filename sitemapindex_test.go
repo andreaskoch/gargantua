@@ -20,7 +20,7 @@ func Test_getSitemapIndex_NoIndexGiven_ErrorIsReturned(t *testing.T) {
 	defer testSitemapServer.Close()
 
 	testServerURL, _ := url.Parse(testSitemapServer.URL)
-	_, err := getSitemapIndex(*testServerURL)
+	_, err := getSitemapIndex(*testServerURL, "gargantua bot")
 
 	if err == nil {
 		t.Fail()
@@ -47,7 +47,7 @@ func Test_getSitemapIndex_IndexExists_IndexIsNotEmpty(t *testing.T) {
 	defer testSitemapServer.Close()
 
 	testServerURL, _ := url.Parse(testSitemapServer.URL)
-	sitemapIndex, err := getSitemapIndex(*testServerURL)
+	sitemapIndex, err := getSitemapIndex(*testServerURL, "gargantua bot")
 
 	if err != nil {
 		t.Fail()

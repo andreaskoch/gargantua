@@ -8,12 +8,13 @@ import (
 type CrawlOptions struct {
 	NumberOfConcurrentRequests int
 	Timeout                    time.Duration
+	UserAgent                  string
 }
 
 func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 
 	// read the XML sitemap as a initial source for URLs
-	urlsFromXMLSitemap, err := getURLs(xmlSitemapURL)
+	urlsFromXMLSitemap, err := getURLs(xmlSitemapURL, "gargantua bot")
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 				go func() {
 					workerID := <-workers
 					debugf("Using worker %d for URL %q", workerID, targetURL.String())
-					results <- executeWork(workerID, cap(workers), targetURL, urls)
+					results <- executeWork(workerID, cap(workers), targetURL, options.UserAgent, urls)
 					debugf("Worker %d finished processing URL %q", workerID, targetURL.String())
 					workers <- workerID
 				}()
@@ -85,8 +86,8 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 				return
 
 			case result := <-results:
-				url := result.URL()
-				debugf("Received results for URL %q", url.String())
+				receivedUrl := result.URL()
+				debugf("Received results for URL %q", receivedUrl.String())
 				updateStatistics(result)
 			}
 		}
