@@ -16,6 +16,8 @@ github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 h1:DpOJ2HYzC
 github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7/go.mod h1:ZXFpozHsX6DPmq2I0TCekCxypsnAUbP2oI0UX1GXzOo=
 github.com/nsf/termbox-go v0.0.0-20161205194251-abe82ce5fb7a h1:JbDkPy70t0IWlnEvNb5TsmOOpKp/0UkPk2FMek2mOGM=
 github.com/nsf/termbox-go v0.0.0-20161205194251-abe82ce5fb7a/go.mod h1:IuKpRQcYE1Tfu+oAQqaLisqDeXgjyyltCfsaoYN18NQ=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 golang.org/x/net v0.0.0-20161101191631-4bb47a1098b3 h1:9FrZULpPblLeSMxFmRapLbJGYHjcvaCZYD+5rwKQqZA=
 golang.org/x/net v0.0.0-20161101191631-4bb47a1098b3/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 gopkg.in/alecthomas/kingpin.v2 v2.2.3 h1:/L3oK40poPRwke0Ipa6qqf8n+awu60Vl3DMe+3jLDt4=

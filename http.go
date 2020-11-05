@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -87,9 +88,18 @@ func readURL(url url.URL, userAgent string) (Response, error) {
 	}, nil
 }
 
-func getURLs(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
+type crawlerUrl struct {
+	url    url.URL
+	parent url.URL
+}
 
-	var urls []url.URL
+func (u crawlerUrl) String() string {
+	return fmt.Sprintf("%s (%s)", u.url.String(), u.parent.String())
+}
+
+func getURLs(xmlSitemapURL url.URL, userAgent string) ([]crawlerUrl, error) {
+
+	var urls []crawlerUrl
 
 	urlsFromIndex, indexError := getURLsFromSitemapIndex(xmlSitemapURL, userAgent)
 	if indexError == nil {
@@ -102,16 +112,26 @@ func getURLs(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
 	}
 
 	if isInvalidSitemapIndexContent(indexError) && isInvalidXMLSitemapContent(sitemapError) {
-		return nil, fmt.Errorf("%q is neither a sitemap index nor a XML sitemap", xmlSitemapURL.String())
+		response, err := readURL(xmlSitemapURL, userAgent)
+		if err != nil {
+			return nil, fmt.Errorf("%q is neither a sitemap index nor a XML sitemap", xmlSitemapURL.String())
+		}
+
+		bodyReader := bytes.NewReader(response.Body())
+		urlFromDependentRequests, dependentRequestsErr := getDependentRequests(xmlSitemapURL, bodyReader)
+		if dependentRequestsErr == nil {
+			urls = append(urls, urlFromDependentRequests...)
+		}
+
 	}
 
 	return urls, nil
 
 }
 
-func getURLsFromSitemap(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
+func getURLsFromSitemap(xmlSitemapURL url.URL, userAgent string) ([]crawlerUrl, error) {
 
-	var urls []url.URL
+	var urls []crawlerUrl
 
 	sitemap, xmlSitemapError := getXMLSitemap(xmlSitemapURL, userAgent)
 	if xmlSitemapError != nil {
@@ -125,15 +145,18 @@ func getURLsFromSitemap(xmlSitemapURL url.URL, userAgent string) ([]url.URL, err
 			return nil, parseError
 		}
 
-		urls = append(urls, *parsedURL)
+		urls = append(urls, crawlerUrl{
+			url:    *parsedURL,
+			parent: xmlSitemapURL,
+		})
 	}
 
 	return urls, nil
 }
 
-func getURLsFromSitemapIndex(xmlSitemapURL url.URL, userAgent string) ([]url.URL, error) {
+func getURLsFromSitemapIndex(xmlSitemapURL url.URL, userAgent string) ([]crawlerUrl, error) {
 
-	var urls []url.URL
+	var urls []crawlerUrl
 
 	sitemapIndex, sitemapIndexError := getSitemapIndex(xmlSitemapURL, userAgent)
 	if sitemapIndexError != nil {
@@ -159,14 +182,14 @@ func getURLsFromSitemapIndex(xmlSitemapURL url.URL, userAgent string) ([]url.URL
 
 }
 
-func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {
+func getDependentRequests(baseURL url.URL, input io.Reader) ([]crawlerUrl, error) {
 
 	doc, err := goquery.NewDocumentFromReader(input)
 	if err != nil {
 		return nil, err
 	}
 
-	var urls []url.URL
+	var urls []crawlerUrl
 
 	// base url
 	base, _ := doc.Find("base[href]").Attr("href")
@@ -203,7 +226,10 @@ func getDependentRequests(baseURL url.URL, input io.Reader) ([]url.URL, error) {
 			return
 		}
 
-		urls = append(urls, *hrefURL)
+		urls = append(urls, crawlerUrl{
+			url:    *hrefURL,
+			parent: baseURL,
+		})
 	})
 
 	return urls, nil

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - Add "Save downloaded data to disk" to the roadmap (feature request #1)
+- Log results to a log file
+
+### Changed
+- Add support for non-sitemap URLs
+- Capture the parent URL
 
 ## [v0.2.0-alpha] - 2017-02-07
 

@@ -23,12 +23,13 @@ type WorkResult struct {
 }
 
 func (workResult WorkResult) String() string {
-	return fmt.Sprintf("#%03d: %03d %9s %15s %20s",
+	return fmt.Sprintf("#%03d: %03d %9s %15s %20s %20s",
 		workResult.workerID,
 		workResult.statusCode,
 		fmt.Sprintf("%d", workResult.responseSize),
-		fmt.Sprintf("%f ms", workResult.ResponseTime().Seconds()*1000),
+		fmt.Sprintf("%fms", workResult.ResponseTime().Seconds()*1000),
 		workResult.url.String(),
+		workResult.parentURL.String(),
 	)
 }
 

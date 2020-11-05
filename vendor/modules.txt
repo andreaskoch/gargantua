@@ -26,6 +26,9 @@ github.com/mitchellh/go-wordwrap
 # github.com/nsf/termbox-go v0.0.0-20161205194251-abe82ce5fb7a
 ## explicit
 github.com/nsf/termbox-go
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
 # golang.org/x/net v0.0.0-20161101191631-4bb47a1098b3
 ## explicit
 golang.org/x/net/html
