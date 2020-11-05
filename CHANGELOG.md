@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Add support for non-sitemap URLs
 - Capture the parent URL
+- Switch from go 1.14 to 1.15
 
 ## [v0.2.0-alpha] - 2017-02-07
 
