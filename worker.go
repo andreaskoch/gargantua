@@ -10,10 +10,10 @@ type WorkRequest struct {
 	Execute func(workerID, numberOfWorkers int) WorkResult
 }
 
-func executeWork(workerID, numberOfWorkers int, targetURL url.URL, userAgent string, newURLs chan url.URL) WorkResult {
+func executeWork(workerID, numberOfWorkers int, targetURL crawlerUrl, userAgent string, newURLs chan crawlerUrl) WorkResult {
 
 	// read the URL
-	response, err := readURL(targetURL, userAgent)
+	response, err := readURL(targetURL.url, userAgent)
 	if err != nil {
 		return WorkResult{err: err}
 	}
@@ -21,13 +21,13 @@ func executeWork(workerID, numberOfWorkers int, targetURL url.URL, userAgent str
 	if response.IsHTML() {
 
 		// get dependent links
-		links, err := getDependentRequests(targetURL, bytes.NewReader(response.Body()))
+		links, err := getDependentRequests(targetURL.url, bytes.NewReader(response.Body()))
 		if err != nil {
 			return WorkResult{err: err}
 		}
 
 		for _, link := range links {
-			go func(url url.URL) {
+			go func(url crawlerUrl) {
 				newURLs <- url
 			}(link)
 		}
@@ -35,7 +35,8 @@ func executeWork(workerID, numberOfWorkers int, targetURL url.URL, userAgent str
 	}
 
 	workResult := WorkResult{
-		url: targetURL,
+		parentURL: targetURL.parent,
+		url: targetURL.url,
 
 		workerID:        workerID,
 		numberOfWorkers: numberOfWorkers,
