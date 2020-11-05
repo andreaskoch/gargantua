@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [v0.4.0-alpha] - 2020-11-05
+
+Logging
 
 ### Added
 - Add "Save downloaded data to disk" to the roadmap (feature request #1)
