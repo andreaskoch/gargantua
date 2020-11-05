@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Add "Save downloaded data to disk" to the roadmap (feature request #1)
 - Log results to a log file
+- Add Github actions
 
 ### Changed
 - Add support for non-sitemap URLs
