@@ -1,7 +1,10 @@
 package main
 
 import (
+	"github.com/pkg/errors"
+	"log"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -9,6 +12,7 @@ type CrawlOptions struct {
 	NumberOfConcurrentRequests int
 	Timeout                    time.Duration
 	UserAgent                  string
+	LogFile                    string
 }
 
 func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
@@ -20,7 +24,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 	}
 
 	// the URL queue
-	urls := make(chan url.URL, len(urlsFromXMLSitemap))
+	urls := make(chan crawlerUrl, len(urlsFromXMLSitemap))
 
 	// fill the URL queue with the URLs from the XML sitemap
 	for _, xmlSitemapURLEntry := range urlsFromXMLSitemap {
@@ -37,7 +41,7 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 
 	allURLsHaveBeenVisited := make(chan bool)
 	go func() {
-		var visitedURLs = make(map[string]url.URL)
+		var visitedURLs = make(map[string]crawlerUrl)
 		for {
 			select {
 			case <-stop:
@@ -76,6 +80,17 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 		}
 	}()
 
+	var logger *log.Logger
+	if options.LogFile != "" {
+		file, err := os.OpenFile(options.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open log file %q for writing", options.LogFile)
+		}
+
+		defer file.Close()
+		logger = log.New(file, "", log.Ldate|log.Ltime)
+	}
+
 	// update the statistics with the results
 	allStatisticsHaveBeenUpdated := make(chan bool)
 	go func() {
@@ -89,6 +104,10 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 				receivedUrl := result.URL()
 				debugf("Received results for URL %q", receivedUrl.String())
 				updateStatistics(result)
+
+				if logger != nil {
+					logResult(logger, result)
+				}
 			}
 		}
 	}()

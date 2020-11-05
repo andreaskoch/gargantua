@@ -11,7 +11,7 @@ import (
 )
 
 const applicationName = "gargantua"
-const applicationVersion = "v0.3.0-alpha"
+const applicationVersion = "v0.4.0-alpha"
 
 var defaultUserAgent = fmt.Sprintf("%s bot (https://github.com/andreaskoch/gargantua)", applicationName)
 
@@ -30,6 +30,7 @@ var (
 	crawlWebsiteURL = crawlCommand.Flag("url", "The URL to a websites' XML sitemap (e.g. https://www.sitemaps.org/sitemap.xml)").Required().Envar("GARGANTUA_URL").Short('u').String()
 	crawlWorkers    = crawlCommand.Flag("workers", "The number of concurrent workers that crawl the site at the same time").Required().Envar("GARGANTUA_WORKERS").Short('w').Int()
 	userAgent       = crawlCommand.Flag("user-agent", "The user agent that shall be used for all requests").Default(defaultUserAgent).Envar("GARGANTUA_USER_AGENT").Short('a').String()
+	logFile         = crawlCommand.Flag("log", "A path to a log file").Default("").Envar("GARGANTUA_LOG_FILE").Short('l').String()
 )
 
 func init() {
@@ -52,7 +53,7 @@ func handleCommandlineArgument(arguments []string) {
 			os.Exit(1)
 		}
 
-		err := startCrawling(*websiteURL, *userAgent, *crawlWorkers, *timeout, *verbose)
+		err := startCrawling(*websiteURL, *userAgent, *crawlWorkers, *timeout, *logFile, *verbose)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s", err)
 			os.Exit(1)
@@ -63,7 +64,7 @@ func handleCommandlineArgument(arguments []string) {
 
 }
 
-func startCrawling(targetURL url.URL, userAgent string, concurrentRequests, timeoutInSeconds int, debugModeIsEnabled bool) error {
+func startCrawling(targetURL url.URL, userAgent string, concurrentRequests, timeoutInSeconds int, logFile string, debugModeIsEnabled bool) error {
 	stopTheCrawler := make(chan bool)
 	stopTheUI := make(chan bool)
 	crawlResult := make(chan error)
@@ -73,6 +74,7 @@ func startCrawling(targetURL url.URL, userAgent string, concurrentRequests, time
 			NumberOfConcurrentRequests: int(concurrentRequests),
 			Timeout:                    time.Second * time.Duration(timeoutInSeconds),
 			UserAgent:                  userAgent,
+			LogFile:                    logFile,
 		}, stopTheCrawler)
 
 		stopTheUI <- true
