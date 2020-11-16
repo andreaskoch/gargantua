@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Don't visit URLs twice (introduced with v0.4.0-alpha)
+
 ## [v0.4.0-alpha] - 2020-11-05
 
 Logging

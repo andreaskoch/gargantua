@@ -93,6 +93,14 @@ type crawlerUrl struct {
 	parent url.URL
 }
 
+func (u crawlerUrl) getUrl() string {
+	return u.url.String()
+}
+
+func (u crawlerUrl) getParent() string {
+	return u.parent.String()
+}
+
 func (u crawlerUrl) String() string {
 	return fmt.Sprintf("%s (%s)", u.url.String(), u.parent.String())
 }

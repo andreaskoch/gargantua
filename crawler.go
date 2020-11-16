@@ -50,14 +50,14 @@ func crawl(xmlSitemapURL url.URL, options CrawlOptions, stop chan bool) error {
 
 			case targetURL := <-urls:
 				// skip URLs we have already seen
-				_, alreadyVisited := visitedURLs[targetURL.String()]
+				_, alreadyVisited := visitedURLs[targetURL.getUrl()]
 
 				if alreadyVisited {
 					continue
 				}
 
 				// mark the URL as visited
-				visitedURLs[targetURL.String()] = targetURL
+				visitedURLs[targetURL.getUrl()] = targetURL
 
 				debugf("Sending URL to work queue: %s", targetURL.String())
 
