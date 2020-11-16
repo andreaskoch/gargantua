@@ -61,8 +61,24 @@ Date and time       #worker   Status Code     Bytes   Response Time   URL       
 
 You can download binaries for Linux, macOS and Windows from [github.com »andreaskoch » gargantua » releases](https://github.com/andreaskoch/gargantua/releases):
 
+Linux:
+
 ```bash
-wget https://github.com/andreaskoch/gargantua/releases/download/v0.3.0-alpha/gargantua_linux_amd64
+curl -L https://github.com/andreaskoch/gargantua/releases/download/v0.4.1-alpha/gargantua_linux_amd64 -o gargantua
+chmod +x gargantua
+```
+
+macOS:
+
+```bash
+curl -L https://github.com/andreaskoch/gargantua/releases/download/v0.4.1-alpha/gargantua_darwin_amd64 -o gargantua
+chmod +x gargantua
+```
+
+Windows:
+
+```bash
+curl -L https://github.com/andreaskoch/gargantua/releases/download/v0.4.1-alpha/gargantua_windows_amd64 -o gargantua.exe
 ```
 
 ## Docker Image
