@@ -36,16 +36,19 @@ func executeWork(workerID, numberOfWorkers int, targetURL crawlerUrl, userAgent 
 
 	workResult := WorkResult{
 		parentURL: targetURL.parent,
-		url: targetURL.url,
+		url:       targetURL.url,
 
 		workerID:        workerID,
 		numberOfWorkers: numberOfWorkers,
 
 		responseSize: response.Size(),
-		statusCode:   response.StatusCode(),
-		startTime:    response.StartTime(),
-		endTime:      response.EndTime(),
-		contentType:  response.ContentType(),
+		body:         response.Body(),
+		header:       response.Header(),
+
+		statusCode:  response.StatusCode(),
+		startTime:   response.StartTime(),
+		endTime:     response.EndTime(),
+		contentType: response.ContentType(),
 	}
 
 	return workResult

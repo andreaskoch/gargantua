@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,11 +15,16 @@ import (
 )
 
 type Response struct {
+	header      map[string][]string
 	body        []byte
 	statusCode  int
 	startTime   time.Time
 	endTime     time.Time
 	contentType string
+}
+
+func (response *Response) Header() map[string][]string {
+	return response.header
 }
 
 func (response *Response) Body() []byte {
@@ -59,7 +65,10 @@ func readURL(url url.URL, userAgent string) (Response, error) {
 
 	req.Header.Set("User-Agent", userAgent)
 
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	resp, fetchErr := client.Do(req)
 	if fetchErr != nil {
 		return Response{}, fetchErr
@@ -80,7 +89,9 @@ func readURL(url url.URL, userAgent string) (Response, error) {
 	}
 
 	return Response{
-		body:        body,
+		body:   body,
+		header: resp.Header,
+
 		statusCode:  resp.StatusCode,
 		startTime:   startTime,
 		endTime:     endTime,
