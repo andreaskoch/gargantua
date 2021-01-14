@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -59,7 +60,10 @@ func readURL(url url.URL, userAgent string) (Response, error) {
 
 	req.Header.Set("User-Agent", userAgent)
 
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	resp, fetchErr := client.Do(req)
 	if fetchErr != nil {
 		return Response{}, fetchErr
