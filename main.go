@@ -11,7 +11,7 @@ import (
 )
 
 const applicationName = "gargantua"
-const applicationVersion = "v0.4.1-alpha"
+const applicationVersion = "v0.5.0-alpha"
 
 var defaultUserAgent = fmt.Sprintf("%s bot (https://github.com/andreaskoch/gargantua)", applicationName)
 
