@@ -15,11 +15,16 @@ import (
 )
 
 type Response struct {
+	header      map[string][]string
 	body        []byte
 	statusCode  int
 	startTime   time.Time
 	endTime     time.Time
 	contentType string
+}
+
+func (response *Response) Header() map[string][]string {
+	return response.header
 }
 
 func (response *Response) Body() []byte {
@@ -84,7 +89,9 @@ func readURL(url url.URL, userAgent string) (Response, error) {
 	}
 
 	return Response{
-		body:        body,
+		body:   body,
+		header: resp.Header,
+
 		statusCode:  resp.StatusCode,
 		startTime:   startTime,
 		endTime:     endTime,

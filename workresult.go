@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -16,20 +17,30 @@ type WorkResult struct {
 	workerID        int
 
 	responseSize int
-	statusCode   int
-	startTime    time.Time
-	endTime      time.Time
-	contentType  string
+	body         []byte
+	header       map[string][]string
+
+	statusCode  int
+	startTime   time.Time
+	endTime     time.Time
+	contentType string
 }
 
 func (workResult WorkResult) String() string {
-	return fmt.Sprintf("#%03d: %03d %9s %15s %20s %20s",
+
+	headers := []string{}
+	for name, value := range workResult.header {
+		headers = append(headers, fmt.Sprintf("'%s:%s'", name, value))
+	}
+
+	return fmt.Sprintf("#%03d: %03d %9s %15s %20s %20s %s",
 		workResult.workerID,
 		workResult.statusCode,
 		fmt.Sprintf("%d", workResult.responseSize),
 		fmt.Sprintf("%fms", workResult.ResponseTime().Seconds()*1000),
 		workResult.url.String(),
 		workResult.parentURL.String(),
+		strings.Join(headers, "|"),
 	)
 }
 
@@ -75,4 +86,12 @@ func (workResult WorkResult) WorkerID() int {
 
 func (workResult WorkResult) NumberOfWorkers() int {
 	return workResult.numberOfWorkers
+}
+
+func (workResult WorkResult) Body() []byte {
+	return workResult.body
+}
+
+func (workResult WorkResult) Header() map[string][]string {
+	return workResult.header
 }

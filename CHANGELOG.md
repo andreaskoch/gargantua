@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Ignore invalid SSL certificates
 
+### Added
+- Log response headers
+
 ## [v0.4.1-alpha] - 2020-11-16
 
 ### Fixed
